@@ -1,5 +1,6 @@
 # Building OpenRadioss
 
+* [Temporary build while extlib v82 is unavailable](#temporary-build-while-extlib-v82-is-unavailable)
 * [Build environment on Linux](#build-environment-on-linux)
   * [System prerequisites](#system-prerequisites)
   * [Compiler and development tools](#compiler-and-development-tools)
@@ -23,6 +24,47 @@
 * [How to build OpenRadioss on Linux with Container using Apptainer](#how-to-build-openradioss-on-linux-with-container-using-apptainer)
 * [How to debug with Visual Studio](./doc/Visual_Studio_Debugger.md)
 * [Notes on third party libraries](#notes-on-third-party-libraries)
+
+## Temporary build while extlib v82 is unavailable
+
+The v82 download currently returns 404 (see [#1](https://github.com/OpenCourant/OpenCourant/issues/1)).
+As a temporary option, download this [compatible source snapshot][compat-source].
+It contains recovered dependencies and matching reader/H3D code changes, rather
+than the original v82 package. Build the whole archive in a separate, short path
+without spaces; copying just its `extlib` directory into this checkout is not enough.
+
+The ZIP's SHA256 is:
+
+```text
+e4719d09d9eb499e35d030e7a6e7548dab4ebe4909c4750496b51699aad2af99
+```
+
+These builds use x86-64, double precision and SMP. Both reject automatic
+`/ALE/STRUCTURED_MESH` generation; use explicit nodes and elements instead.
+ALE calculations on an existing mesh remain available. Other configurations
+have not been checked with these dependencies.
+
+On Linux, install GCC, G++, GFortran, CMake, Make and Python 3, then run from the
+extracted directory:
+
+```bash
+bash build_linux.sh 8
+```
+
+On Windows, install Visual Studio C++ Build Tools and a Windows SDK, Intel oneAPI
+Fortran/C/C++ and MKL, plus CMake, Ninja and Python 3. From a oneAPI command prompt
+in the extracted directory:
+
+```bat
+build_windows_compat.bat 8
+```
+
+See the snapshot's [build and run instructions][compat-build] for runtime paths
+and a bundled twisted-beam example. This workaround uses a separate source
+snapshot; it does not change this repository's v82 dependency setup.
+
+[compat-source]: https://codeload.github.com/lililii124/openradioss-261001/zip/c26692c5a0e2947e876ad93a4dda3c4abf5cb1a6
+[compat-build]: https://github.com/lililii124/openradioss-261001/blob/c26692c5a0e2947e876ad93a4dda3c4abf5cb1a6/doc/BUILDING.md
 
 ## Build environment on Linux
 
