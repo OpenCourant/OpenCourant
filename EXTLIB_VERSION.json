@@ -1,12 +1,13 @@
 {
-  "version": "67",
-  "delivery_date": "2026-06-30",
+  "version": "82",
+  "delivery_date": "2026-09-22",
   "bundled": false,
-  "source": "https://github.com/AgenteScontro/OpenRadioss_extlib",
-  "revision": "f10f11a4ba6943e2d950ac12da47461ea7b8f05d",
+  "source": "https://github.com/OpenCourant/extlib/tree/upstream-v82",
+  "revision": "f2fa2cd00dd5937d96e521f163a191f2dee90148",
   "required_files": [
     "h3d/includes/h3dpublic_defs.h",
     "h3d/includes/h3dpublic_export.h",
+    "h3d/includes/h3dpublic_import.h",
     "md5/include/md5.h",
     "exprtk/exprtk.hpp",
     "boost/boost_1_70_0/boost/filesystem.hpp",
@@ -22,9 +23,16 @@
       "image_manifest": "sha256:5de9321dfa53a372f00c4e9159ccd63fccc4245dffca5ec0c2a1bc49f8ef83ae",
       "layer": "sha256:a54673c1ccc90d2a73776667487e7f056944c936f70a8dcb6a8580fa9929253e",
       "original_release": "latest-20260615",
+      "build_id": "20260602_fcb3b29a",
+      "effective_extlib_era": "v60",
       "reader_sha256": "37a8fcc2da2fc4e3581ae668176204fa4d206ac866ee4da53a1e988a543195ca",
       "apr_sha256": "f76d9796e59b675cb374fc3f3403f7878bdcb348e4c6f8af017c3dc3046be89c",
       "notices": "extlib/hm_reader/linux64/notices",
+      "missing_symbols": [
+        "cpp_is_part_with_elements",
+        "cpp_sale_mesh_create",
+        "cpp_get_include_file_by_index"
+      ],
       "unsupported_keywords": [
         "/ALE/STRUCTURED_MESH"
       ]
@@ -33,16 +41,21 @@
       "source": "https://github.com/OpenRadioss/OpenRadioss/releases/tag/latest-20260728",
       "archive": "OpenRadioss_win64.zip",
       "archive_sha256": "04dfecb0bf26ce071132cda86dc6861417c6a4127a389befe82b8c97341b3268",
+      "build_id": "20260710_d899773e",
+      "effective_extlib_era": "v70",
       "reader_sha256": "ee7279ed3f5271217a8420358bbea69043470a08a6a9e641ba574f3b5d304eac",
       "import_library_sha256": "ad39c2e0b7b91de0eaf561102e8ea9ffd522423dc6e84fb28f75e5e2d69df97e",
       "notices": "extlib/hm_reader/win64/notices",
+      "missing_symbols": [
+        "cpp_get_include_file_by_index"
+      ],
       "compatibility_build_unsupported_keywords": [
         "/ALE/STRUCTURED_MESH"
       ]
     }
   },
-  "package_tag": "v67-compat",
-  "package_date": "2026-10-03",
-  "url": "https://github.com/OpenCourant/extlib/releases/download/v67-compat/extlib.zip",
-  "sha256": "6ebf4f3d5caa3f4c8608e6d5dafc360c055272cbfc754120181435dd8f51e4cd"
+  "package_tag": "v82-hybrid",
+  "package_date": "2026-10-04",
+  "url": "https://github.com/OpenCourant/extlib/releases/download/v82-hybrid/extlib.zip",
+  "sha256": "eee964c4e05037bc856eb387fb8276de33cc58d040c010a2d2934c7f1a16a5e8"
 }

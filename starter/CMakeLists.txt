@@ -5,9 +5,10 @@
 cmake_minimum_required (VERSION 3.15)
 project (Radioss_Starter)
 
-# The v67 compatibility extlib (see EXTLIB_VERSION.json) ships a reader that
-# lacks the newer selection APIs, so the legacy compatibility paths default
-# to ON. Set them to OFF when building against an extlib >= v82.
+# The recovered hm_reader binaries (see reader_components in
+# EXTLIB_VERSION.json) lack the newer selection APIs, so the legacy
+# compatibility paths default to ON. Set them to OFF only with a reader
+# from extlib v76 or later.
 option(HM_READER_LEGACY_INCLUDE_API
        "Enumerate model includes through the legacy reader selection API" ON)
 if(HM_READER_LEGACY_INCLUDE_API)
@@ -256,8 +257,10 @@ endif (NOT CMAKE_BUILD_TYPE)
 
 
 
-# Default ON: the v67 compatibility reader cannot generate structured ALE
-# meshes (see EXTLIB_VERSION.json). Set to OFF with an extlib >= v82.
+# Default ON: the recovered Linux reader cannot generate structured ALE
+# meshes, and a Windows trial with the v70-era reader produced invalid node
+# coordinates (see reader_components in EXTLIB_VERSION.json). Set to OFF
+# only with a validated reader from extlib v76 or later.
 option(HM_READER_NO_STRUCTURED_ALE
        "Reject /ALE/STRUCTURED_MESH when the input reader lacks its generator" ON)
 if(HM_READER_NO_STRUCTURED_ALE)
