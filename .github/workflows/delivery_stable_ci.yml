@@ -1,0 +1,543 @@
+name: Delivery stable CI
+
+# Release pipeline for OpenCourant. Builds the Linux x86_64 binaries in the
+# OpenCourant build image (ghcr.io/opencourant/linux64-bld-qa, from
+# https://github.com/OpenCourant/ci-images), gates them on MiniQA, packages
+# OpenCourant_linux64.zip and publishes a GitHub release on a latest-YYYYMMDD
+# tag, keeping the last 3 stable releases.
+#
+# Replaces the OpenRadioss pipeline that depended on Altair infrastructure
+# (internal registry, self-hosted runners, JFrog, private EXTRA repository,
+# mail relay, download counters).
+#
+# TODO(windows): win64 builds need self-hosted Windows runners with the
+# Intel oneAPI toolchain. Disabled until OpenCourant has Windows
+# infrastructure.
+# TODO(arm): linuxa64 builds need an aarch64 build image and, more
+# importantly, a linuxa64 hm_reader, which the v67-compat extlib package
+# does not contain. Disabled until a newer extlib is available.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Existing tag to deliver (empty: create latest-YYYYMMDD on main HEAD)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  discussions: write
+
+env:
+  QA_TIMEOUT_PER_TEST_LINUX: 150
+
+jobs:
+
+  # Resolve the tag to deliver: use the given existing tag, or create
+  # latest-YYYYMMDD on the current commit.
+  set_tag:
+    if: ${{ github.repository_owner == 'OpenCourant' }}
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      sha: ${{ steps.resolve.outputs.sha }}
+      date: ${{ steps.resolve.outputs.date }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Resolve or create tag
+        id: resolve
+        run: |
+          TAG="${{ github.event.inputs.tag_name }}"
+          if [ -z "$TAG" ]
+          then
+            TAG="latest-$(date -u +%Y%m%d)"
+            if gh api "repos/${{ github.repository }}/git/ref/tags/$TAG" > /dev/null 2>&1
+            then
+              echo "Tag $TAG already exists, delivering it again"
+            else
+              echo "Creating tag $TAG on ${{ github.sha }}"
+              gh api -X POST "repos/${{ github.repository }}/git/refs" \
+                -f ref="refs/tags/$TAG" -f sha="${{ github.sha }}"
+            fi
+          else
+            if ! gh api "repos/${{ github.repository }}/git/ref/tags/$TAG" > /dev/null 2>&1
+            then
+              echo "::error::Tag $TAG does not exist. Create it first or leave the input empty."
+              exit 1
+            fi
+          fi
+          SHA=$(gh api "repos/${{ github.repository }}/commits/$TAG" --jq .sha)
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "date=${TAG#latest-}" >> "$GITHUB_OUTPUT"
+          echo "Delivering $TAG ($SHA)"
+
+  build_linux:
+    needs: set_tag
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+
+    env:
+      BUILD_NB_THREAD: 4
+      RADIOSS_SHA_HEADER: ${{ needs.set_tag.outputs.sha }}
+
+    strategy:
+      # If one job fails others are canceled
+      fail-fast: true
+      matrix:
+        include:
+          - build: starter_linux64_gf
+            precision: dp
+            os: linux64
+            binary: starter
+
+          - build: starter_linux64_gf_sp
+            precision: sp
+            os: linux64
+            binary: starter
+
+          - build: engine_linux64_gf_ompi
+            precision: dp
+            os: linux64
+            binary: engine
+            mpi: ompi
+
+          - build: engine_linux64_gf_ompi_sp
+            precision: sp
+            os: linux64
+            binary: engine
+            mpi: ompi
+
+          - build: engine_linux64_gf
+            precision: dp
+            os: linux64
+            binary: engine
+
+          - build: engine_linux64_gf_sp
+            precision: sp
+            os: linux64
+            binary: engine
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+          ref: ${{ needs.set_tag.outputs.tag }}
+
+      - name: Running build
+        run: |
+          mpi_opts=''
+          if [ ! -z ${{ matrix.mpi }} ]
+          then
+            mpi_opts="-mpi=${{ matrix.mpi }}"
+          fi
+
+          cmd="./build_script.sh -release -arch=${{ matrix.os }}_gf -prec=${{ matrix.precision }} -nt=${{ env.BUILD_NB_THREAD }} -static-link $mpi_opts"
+          echo "========================================="
+          echo "--  BUILD ${{ matrix.build }} --"
+          echo "--  $cmd --"
+          echo "========================================="
+          source /root/.bashrc
+          chmod 755 Compiling_tools/script/*
+          chmod 755 ${{ matrix.binary }}/build_script.sh
+
+          mkdir exec
+          cd ${{ matrix.binary }}
+          eval $cmd
+          cd ..
+
+          md5sum exec/* || exit 1
+
+      - name: Upload built artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: bins-${{ matrix.os }}-${{ matrix.precision }}-${{ matrix.build }}
+          path: exec
+
+      # We upload extlib only once, arbitrary choice
+      - name: Upload extlib artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: extlib.zip
+          path: extlib.zip
+        if: ${{ matrix.build == 'starter_linux64_gf' }}
+
+  # Build the output converters from source (upstream shipped prebuilt
+  # binaries from an internal JFrog instance) and collect the GCC runtime
+  # libraries that -static-link leaves dynamic, so the package is
+  # self-contained on systems without libgomp/libquadmath.
+  build_tools:
+    needs: set_tag
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2"
+
+    steps:
+      - name: Checkout Tools sources
+        uses: actions/checkout@v6
+        with:
+          repository: 'OpenCourant/Tools'
+          lfs: 'true'
+
+      - name: Build output converters
+        run: |
+          source /root/.bashrc
+          cd output_converters/anim_to_vtk/linux64
+          bash build.bash
+          cd ../../th_to_csv/linux64
+          bash build.bash
+          cd ../../..
+          md5sum exec/* || exit 1
+
+      - name: Collect GCC runtime libraries
+        run: |
+          mkdir -p gcc_runtime
+          cp -a /lib64/libgomp.so.1* /lib64/libquadmath.so.0* gcc_runtime/
+          ls -l gcc_runtime/
+
+      - name: Upload converter artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tools-linux64
+          path: exec
+
+      - name: Upload GCC runtime artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: gcc-runtime-linux64
+          path: gcc_runtime
+
+  # QA gate: do not publish binaries that did not just pass MiniQA.
+  qa_release:
+    needs: [set_tag, build_linux]
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+
+    env:
+      hm_reader_extlib: ../../extlib/hm_reader
+      hm_reader_cfgfiles: ../../hm_cfg_files
+      homeuser: /root
+      mpi: ompi
+      QA_NB_PROC: 2
+      QA_NB_THREAD: 2
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux64]
+        precision: [dp]
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+          ref: ${{ needs.set_tag.outputs.tag }}
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: bins-${{ matrix.os }}-${{ matrix.precision }}-starter_linux64_gf
+          path: exec
+          merge-multiple: true
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: bins-${{ matrix.os }}-${{ matrix.precision }}-engine_linux64_gf_ompi
+          path: exec
+          merge-multiple: true
+      - name: Download extlib artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: extlib.zip
+
+      - name: Unzip extlib
+        run: |
+          unzip extlib.zip
+
+      - name: Running qa
+        run: |
+          md5sum exec/* || echo "Nothing in exec/"
+          if [ "${{ matrix.precision }}" = "dp" ]
+          then
+            precision_ext=""
+          else
+            precision_ext="_${{ matrix.precision }}"
+          fi
+
+          chmod 755 exec/*
+          cd qa-tests/scripts
+          rm -f QA.summary
+          chmod 755 or_qa_script or_radioss.pl
+
+          # Allow root to execute mpi command (we are in docker container as root)
+          export OMPI_ALLOW_RUN_AS_ROOT=1
+          export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+          source ${{ env.homeuser }}/.bashrc
+          export LD_LIBRARY_PATH=${{ env.hm_reader_extlib }}/${{ matrix.os }}:$LD_LIBRARY_PATH
+
+          cmd="./or_qa_script ../../exec/engine_${{ matrix.os }}_gf_${{ env.mpi }}${precision_ext} 1.0 --env:RAD_CFG_PATH=${{ env.hm_reader_cfgfiles }} --system_run --env:OMP_STACKSIZE=400m --exec_script_args='mpiexec -np ${{ env.QA_NB_PROC }}' --env:OMP_NUM_THREADS=${{ env.QA_NB_THREAD }} --output_failures_stdout --xtra_args='--timeoutscript=${{ env.QA_TIMEOUT_PER_TEST_LINUX }}' "
+          echo "========================================="
+          echo "--  QA ${{ matrix.os }}_${{ matrix.precision }} --"
+          echo "--  $cmd --"
+          echo "========================================="
+          eval $cmd
+          res=$?
+
+          nbtestsfailed=$(grep "# Runs Failed\s*:" QA.summary | tail -n 1 | awk -F' ' '{print $5}')
+          nbtestsok=$(grep "# Runs Successful\s*:" QA.summary | tail -n 1 | awk -F' ' '{print $5}')
+
+          if [ $res -gt 0 ] || [ $nbtestsfailed -gt 0 ] || [ $nbtestsok = 0 ]
+          then
+            echo "All tests are not OK, delivery is canceled"
+            exit 1
+          fi
+
+  delivery:
+    needs: [set_tag, build_linux, build_tools, qa_release]
+    runs-on: ubuntu-latest
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DELIVERY_NB_RELEASES_TO_KEEP: 3
+      DELIVERY_TAG_PREFIX: 'latest-'
+      MAINDIR: 'OpenCourant'
+      TAG: ${{ needs.set_tag.outputs.tag }}
+      SHA: ${{ needs.set_tag.outputs.sha }}
+      DATEOFTHETAG: ${{ needs.set_tag.outputs.date }}
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+          ref: ${{ env.TAG }}
+
+      - name: Checkout Tools sources
+        uses: actions/checkout@v6
+        with:
+          repository: 'OpenCourant/Tools'
+          lfs: 'true'
+          path: 'TOOLS'
+
+      - name: Download ALL artifacts for packaging
+        uses: actions/download-artifact@v8
+        with:
+          merge-multiple: false
+          path: exec_tmp
+
+      - name: Assemble package
+        run: |
+          set -e
+          echo "List exec_tmp:"
+          find exec_tmp -type f
+
+          unzip -q exec_tmp/extlib.zip/extlib.zip
+
+          rm -rf todeliver
+          mkdir -p todeliver/${MAINDIR}/exec \
+                   todeliver/${MAINDIR}/extlib/h3d/lib/linux64 \
+                   todeliver/${MAINDIR}/extlib/hm_reader \
+                   todeliver/${MAINDIR}/licenses
+
+          # Solver binaries + output converters
+          cp -a exec_tmp/bins-linux64-*/* todeliver/${MAINDIR}/exec/
+          cp -a exec_tmp/tools-linux64/*  todeliver/${MAINDIR}/exec/
+
+          # Runtime libraries from the extlib package
+          cp -a extlib/h3d/lib/linux64/* todeliver/${MAINDIR}/extlib/h3d/lib/linux64/
+          cp -a extlib/hm_reader/linux64 todeliver/${MAINDIR}/extlib/hm_reader/
+
+          # GCC runtime libraries (-static-link leaves libgomp/libquadmath
+          # dynamic); placed on the same documented LD_LIBRARY_PATH entry
+          # as the hm_reader, like upstream did with libapr
+          cp -a exec_tmp/gcc-runtime-linux64/* todeliver/${MAINDIR}/extlib/hm_reader/linux64/
+
+          # Reader configuration, licenses, GUI, input converter
+          cp -a hm_cfg_files todeliver/${MAINDIR}/
+          cp -a extlib/license/* todeliver/${MAINDIR}/licenses/
+          cp -a TOOLS/openradioss_gui todeliver/${MAINDIR}/
+          cp -a TOOLS/input_converters/inp2rad/inp2rad/inp2rad.py todeliver/${MAINDIR}/openradioss_gui/
+          cp -a COPYRIGHT.md todeliver/${MAINDIR}/
+
+          cat > todeliver/${MAINDIR}/licenses/gcc_runtime_notice.txt << 'EOF'
+          GCC runtime libraries (libgomp, libquadmath)
+
+          The files extlib/hm_reader/linux64/libgomp.so.1* and
+          extlib/hm_reader/linux64/libquadmath.so.0* are unmodified copies of
+          the GCC runtime libraries from Rocky Linux 8 (gcc 8.5.0), bundled so
+          that the OpenCourant binaries run on systems where they are not
+          installed.
+
+          They are licensed under the GNU General Public License version 3
+          with the GCC Runtime Library Exception, which permits this
+          redistribution. See:
+          https://www.gnu.org/licenses/gcc-exception-3.1.html
+
+          Source code is available from Rocky Linux (https://rockylinux.org)
+          and the GNU project (https://gcc.gnu.org).
+          EOF
+
+          chmod 755 todeliver/${MAINDIR}/exec/*
+
+          cd todeliver
+          zip -qr ${MAINDIR}_linux64.zip ${MAINDIR}
+          cd ..
+          ls -l todeliver/${MAINDIR}_linux64.zip
+
+      - name: Release the new binaries
+        run: |
+          set -e
+          AUTHOR=$(gh api "repos/${{ github.repository }}/commits/${SHA}" --jq '.author.login // .commit.author.name')
+
+          {
+            echo "This automatic release is built from commit ${SHA}, authored by @${AUTHOR}."
+            echo "[GitHub Actions workflow run that built this release](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo ""
+            echo "Commit message:"
+            echo '```'
+            git log -1 --format=%B "${TAG}"
+            echo '```'
+            echo ""
+            echo "## Linux x86_64 package"
+            echo ""
+            echo "Unzip \`OpenCourant_linux64.zip\` and set:"
+            echo ""
+            echo '```sh'
+            echo 'export OPENCOURANT_PATH=/path/to/OpenCourant'
+            echo 'export LD_LIBRARY_PATH=$OPENCOURANT_PATH/extlib/hm_reader/linux64:$OPENCOURANT_PATH/extlib/h3d/lib/linux64:$LD_LIBRARY_PATH'
+            echo 'export RAD_CFG_PATH=$OPENCOURANT_PATH/hm_cfg_files'
+            echo '```'
+            echo ""
+            echo "Executables are in \`exec/\` (Starter and Engine in single and double precision, SMP and OpenMPI, plus anim_to_vtk and th_to_csv converters)."
+            echo ""
+            echo "**Notes**"
+            echo "- The \`_ompi\` Engine requires OpenMPI 4.1.2 installed in \`/opt/openmpi\` (see INSTALL.md); the SMP Engine runs standalone"
+            echo "- \`/ALE/STRUCTURED_MESH\` is not supported by the current (v67 compatibility) input reader and is rejected explicitly"
+            echo "- Windows and Linux arm64 packages are not available yet"
+            echo ""
+            echo "Thank you for using OpenCourant! 👉 [Share your feedback in GitHub Discussions](https://github.com/${{ github.repository }}/discussions)"
+          } > release_body.md
+
+          # Re-deliveries replace the existing release on the same tag
+          gh release delete "${TAG}" --repo "${{ github.repository }}" --yes || true
+          gh release create "${TAG}" \
+            --repo "${{ github.repository }}" \
+            --verify-tag \
+            --title "OpenCourant stable build ${DATEOFTHETAG}" \
+            --notes-file release_body.md \
+            todeliver/${MAINDIR}_linux64.zip
+
+      - name: Clean old github releases and tags
+        run: |
+          gh api "repos/${{ github.repository }}/releases" --paginate \
+            --jq '.[] | select(.tag_name | startswith("'"${DELIVERY_TAG_PREFIX}"'")) | "\(.created_at)\t\(.id)\t\(.tag_name)"' \
+            | sort -r | tail -n "+$((DELIVERY_NB_RELEASES_TO_KEEP + 1))" \
+            | while IFS=$'\t' read -r created id tag
+          do
+            echo "Deleting old release $tag (created $created)"
+            gh api -X DELETE "repos/${{ github.repository }}/releases/$id"
+            gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/$tag"
+          done
+
+      - name: Create a new GitHub Discussion Announcement
+        continue-on-error: true
+        uses: actions/github-script@v8
+        env:
+          TAG: ${{ needs.set_tag.outputs.tag }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const query = `
+              query {
+                repository(owner: "${context.repo.owner}", name: "${context.repo.repo}") {
+                  id
+                  discussionCategories(first: 20) {
+                    nodes {
+                      id
+                      name
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query);
+            const repoId = result.repository.id;
+            const categories = result.repository.discussionCategories.nodes;
+
+            // Prefer an announcement-like category, fall back to the first one
+            const category = categories.find(c => /announce/i.test(c.name)) ?? categories[0];
+
+            if (!category) {
+              core.warning('No discussion categories found, skipping announcement.');
+              return;
+            }
+
+            const createMutation = `
+              mutation CreateDiscussion($repositoryId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
+                createDiscussion(input: {repositoryId: $repositoryId, categoryId: $categoryId, title: $title, body: $body}) {
+                  discussion {
+                    url
+                  }
+                }
+              }
+            `;
+
+            const discussion = await github.graphql(createMutation, {
+              repositoryId: repoId,
+              categoryId: category.id,
+              title: `OpenCourant Stable Update (${process.env.TAG})`,
+              body: `We're excited to announce a new **stable release of OpenCourant!**\nThis version is based on **tag ${process.env.TAG}**.\n🔹 [Get it now](https://github.com/${context.repo.owner}/${context.repo.repo}/releases/tag/${process.env.TAG})\nPlease try it out and share your appreciated feedback, thanks!`
+            });
+
+            console.log(`Discussion created: ${discussion.createDiscussion.discussion.url}`);
+
+  cleanup_artifacts:
+    if: ${{ always() && github.repository_owner == 'OpenCourant' }}
+    needs: [delivery]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+
+    steps:
+      - name: Delete all artifacts for current run
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const artifacts = await github.paginate(
+              github.rest.actions.listWorkflowRunArtifacts,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId,
+                per_page: 100,
+              }
+            );
+
+            core.info(`Found ${artifacts.length} artifact(s) for run ${context.runId}.`);
+
+            for (const artifact of artifacts) {
+              core.info(`Deleting artifact: ${artifact.name} (id=${artifact.id})`);
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+              });
+            }
+
+            core.info('Artifact cleanup completed.');
