@@ -27,7 +27,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "h3dreader_dl.h"
 
 #define _FCALL
 
@@ -50,6 +49,14 @@
 
 #endif
 
+/* Opaque handle for H3D reader file (same underlying type as writer H3DFileInfo) */
+typedef void H3DReaderInfo;
+
+/* Message / error callback types */
+typedef void (*H3DMessageFunctionType)(H3DReaderInfo* context, const char* msg);
+typedef void (*H3DErrorFunctionType)(H3DReaderInfo* context, const char* msg);
+
+
 #ifdef _WIN32
 char * h3dreaderlib = "h3dreader.dll";
 char   libh3dreaderpath[20000];
@@ -69,8 +76,8 @@ char h3dreader_load_libname[20000];
  * ----------------------------------------------------------------------- */
 
 H3DReaderInfo* (*DLHyper3DImportOpen)(const char* filename,
-                                      H3DReaderMessageFunctionType mFunc,
-                                      H3DReaderErrorFunctionType   eFunc);
+                                      H3DMessageFunctionType mFunc,
+                                      H3DErrorFunctionType   eFunc);
 
 bool (*DLHyper3DImportClose)(H3DReaderInfo* h3d_file);
 
@@ -240,8 +247,8 @@ void h3dreaderlib_load_(int * IERROR)
  * ----------------------------------------------------------------------- */
 
 H3DReaderInfo* Hyper3DImportOpen(const char* filename,
-                                 H3DReaderMessageFunctionType mFunc,
-                                 H3DReaderErrorFunctionType   eFunc)
+                                 H3DMessageFunctionType mFunc,
+                                 H3DErrorFunctionType   eFunc)
 {
   return DLHyper3DImportOpen(filename, mFunc, eFunc);
 }
