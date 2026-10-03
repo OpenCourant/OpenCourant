@@ -131,7 +131,14 @@
             message_value(1:message_size) = 0
             message_value(1) = 0 ! if =1 --> activation of debug messages in the hm reader
             if(len_trim(key3)==0) then
+#ifdef HM_READER_NO_STRUCTURED_ALE
+              write(*,'(A)') 'ERROR: /ALE/STRUCTURED_MESH requires a newer input reader.'
+              write(*,'(A)') 'This compatibility build cannot generate structured ALE meshes.'
+              call arret(2)
+              return
+#else
               call cpp_sale_mesh_create(message_value)
+#endif
               next = next + 1
               input_modification%s_ale(next)%title(1:100) = ''
               input_modification%s_ale(next)%title(1:len_trim(titr)) = titr(1:len_trim(titr))

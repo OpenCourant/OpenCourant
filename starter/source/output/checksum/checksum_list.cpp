@@ -24,7 +24,7 @@
 #include <checksum_model.h>
 #include <checksum_output_files.h>
 #include <checksum_list.h>
-#include <h3dpublic_import.h>
+#include <h3dreader_dl.h>
 using namespace std;
 
 bool List_checksum::is_integer(const std::string s) {
@@ -630,10 +630,6 @@ std::string List_checksum::get_path(const std::string& filepath) {
 // End of class Verify_checksum
 // ------------------------------------------------------------------------------------------------------------------------
 
-extern "C" {
-  void h3dreaderlib_load_(int *IERROR);
-}
-
 // ------------------------------------------------------------------------------------------------------------------------
 // parse_h3d_files : read ZCHKSM_ tags stored in the H3D string table.
 // ------------------------------------------------------------------------------------------------------------------------
@@ -660,7 +656,7 @@ void List_checksum::parse_h3d_files(string directory, string rootname) {
       h3d_path = item;
     }
 
-    H3DFileInfo* h3d = Hyper3DImportOpen(h3d_path.c_str(), nullptr, nullptr);
+    H3DReaderInfo* h3d = Hyper3DImportOpen(h3d_path.c_str(), nullptr, nullptr);
     if (!h3d) {
       if (debug) cout << "Warning: Cannot open H3D file: " << h3d_path << endl;
       continue;
@@ -668,7 +664,7 @@ void List_checksum::parse_h3d_files(string directory, string rootname) {
 
     list<string> found_tags;
     const string prefix = "ZCHKSM_";
-    H3D_ID string_id = 1;
+    uint32_t string_id = 1;
     const char* value = nullptr;
     while (Hyper3DLookupString(h3d, string_id, &value)) {
       if (value && string(value).compare(0, prefix.size(), prefix) == 0) {

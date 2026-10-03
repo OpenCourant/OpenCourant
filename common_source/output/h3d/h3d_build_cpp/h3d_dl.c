@@ -52,6 +52,7 @@
 #endif
 
 #include "h3dpublic_defs.h"
+#include "h3dpublic_export.h"
 
 
 #ifdef _WIN32
@@ -257,7 +258,7 @@ char * H3D_open_file="Hyper3DExportOpen";
 
  bool (*DLHyper3DDatatypeWrite) (H3DFileInfo* h3d_file, const char* label, 
            H3D_ID dt_id, H3D_DS_FORMAT format, H3D_DS_TYPE type, 
- 	   unsigned int num_pools, H3D_NF_FORMAT nf_format);
+           H3D_NF_FORMAT nf_format, unsigned int num_pools);
 
  bool (*DLHyper3DDatatypeDescriptionWrite)  (H3DFileInfo* h3d_file, 
  	   H3D_ID dt_id, const char* description);
@@ -275,10 +276,9 @@ char * H3D_open_file="Hyper3DExportOpen";
 
  bool (*DLHyper3DDatasetBegin)  (H3DFileInfo* h3d_file, unsigned int count, 
  	   H3D_SIM_IDX idx, H3D_ID subcase_id, 
- 	   H3D_DS_TYPE type, H3D_DS_FORMAT format, 
+           H3D_DS_TYPE type, H3D_DS_FORMAT format, H3D_NF_FORMAT nf_format,
  	   unsigned int num_corners, unsigned int num_modes, 
- 	   H3D_ID dt_id, int layer_idx, H3D_ID data_poolname_id,
- 	   H3D_NF_FORMAT nf_format);
+           H3D_ID dt_id, int layer_idx, H3D_ID data_poolname_id);
 
  bool (*DLHyper3DDatasetWriteParent)  (H3DFileInfo* h3d_file, H3D_ID comp_id, 
  	   H3D_ID component_poolname_id);
@@ -1370,9 +1370,9 @@ H3DFileInfo* Hyper3DExportOpen(const char* filename, H3D_FileMode mode,
 
  bool Hyper3DDatatypeWrite(H3DFileInfo* h3d_file, const char* label, 
  	   H3D_ID dt_id, H3D_DS_FORMAT format, H3D_DS_TYPE type, 
- 	   unsigned int num_pools, H3D_NF_FORMAT nf_format)
+           H3D_NF_FORMAT nf_format, unsigned int num_pools)
 {  bool return_value;
-   return_value = DLHyper3DDatatypeWrite(h3d_file, label, dt_id, format, type, num_pools, nf_format);
+   return_value = DLHyper3DDatatypeWrite(h3d_file, label, dt_id, format, type, nf_format, num_pools);
    return return_value ;
 }
 
@@ -1406,14 +1406,13 @@ H3DFileInfo* Hyper3DExportOpen(const char* filename, H3D_FileMode mode,
 
  bool Hyper3DDatasetBegin(H3DFileInfo* h3d_file, unsigned int count, 
  	   H3D_SIM_IDX idx, H3D_ID subcase_id, 
- 	   H3D_DS_TYPE type, H3D_DS_FORMAT format, 
+           H3D_DS_TYPE type, H3D_DS_FORMAT format, H3D_NF_FORMAT nf_format,
  	   unsigned int num_corners, unsigned int num_modes, 
- 	   H3D_ID dt_id, int layer_idx, H3D_ID data_poolname_id,
- 	   H3D_NF_FORMAT nf_format)
+           H3D_ID dt_id, int layer_idx, H3D_ID data_poolname_id)
 {  bool return_value;
    return_value = DLHyper3DDatasetBegin(h3d_file,count, idx,subcase_id, 
- 	   type, format, num_corners, num_modes, 
- 	   dt_id, layer_idx, data_poolname_id, nf_format);
+           type, format, nf_format, num_corners, num_modes,
+           dt_id, layer_idx, data_poolname_id);
    return return_value ;
 }
 

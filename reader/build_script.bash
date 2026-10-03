@@ -106,7 +106,7 @@ echo " "
 
 # Load external libraries
 echo "Load external libraries"
-python ../Compiling_tools/script/load_extlib.py
+python3 ../Compiling_tools/script/load_extlib.py || exit 1
 
 
 # create build directory

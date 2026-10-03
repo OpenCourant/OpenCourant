@@ -1,1 +1,48 @@
-{"version": "82","delivery_date":"2026-09-22","url": "https://github.com/OpenRadioss/OpenRadioss_extlib/releases/download/v82/extlib.zip"}
+{
+  "version": "67",
+  "delivery_date": "2026-06-30",
+  "bundled": false,
+  "source": "https://github.com/AgenteScontro/OpenRadioss_extlib",
+  "revision": "f10f11a4ba6943e2d950ac12da47461ea7b8f05d",
+  "required_files": [
+    "h3d/includes/h3dpublic_defs.h",
+    "h3d/includes/h3dpublic_export.h",
+    "md5/include/md5.h",
+    "exprtk/exprtk.hpp",
+    "boost/boost_1_70_0/boost/filesystem.hpp",
+    "hm_reader/linux64/libhm_reader_linux64.so",
+    "hm_reader/linux64/libapr-1.so.0",
+    "hm_reader/win64/hm_reader_win64.dll",
+    "hm_reader/win64/hm_reader_win64.lib"
+  ],
+  "reader_components": {
+    "linux64": {
+      "source": "https://hub.docker.com/r/dheiny/openradioss-solver",
+      "image": "dheiny/openradioss-solver:1.0.37",
+      "image_manifest": "sha256:5de9321dfa53a372f00c4e9159ccd63fccc4245dffca5ec0c2a1bc49f8ef83ae",
+      "layer": "sha256:a54673c1ccc90d2a73776667487e7f056944c936f70a8dcb6a8580fa9929253e",
+      "original_release": "latest-20260615",
+      "reader_sha256": "37a8fcc2da2fc4e3581ae668176204fa4d206ac866ee4da53a1e988a543195ca",
+      "apr_sha256": "f76d9796e59b675cb374fc3f3403f7878bdcb348e4c6f8af017c3dc3046be89c",
+      "notices": "extlib/hm_reader/linux64/notices",
+      "unsupported_keywords": [
+        "/ALE/STRUCTURED_MESH"
+      ]
+    },
+    "win64": {
+      "source": "https://github.com/OpenRadioss/OpenRadioss/releases/tag/latest-20260728",
+      "archive": "OpenRadioss_win64.zip",
+      "archive_sha256": "04dfecb0bf26ce071132cda86dc6861417c6a4127a389befe82b8c97341b3268",
+      "reader_sha256": "ee7279ed3f5271217a8420358bbea69043470a08a6a9e641ba574f3b5d304eac",
+      "import_library_sha256": "ad39c2e0b7b91de0eaf561102e8ea9ffd522423dc6e84fb28f75e5e2d69df97e",
+      "notices": "extlib/hm_reader/win64/notices",
+      "compatibility_build_unsupported_keywords": [
+        "/ALE/STRUCTURED_MESH"
+      ]
+    }
+  },
+  "package_tag": "v67-compat",
+  "package_date": "2026-10-03",
+  "url": "https://github.com/OpenCourant/extlib/releases/download/v67-compat/extlib.zip",
+  "sha256": "6ebf4f3d5caa3f4c8608e6d5dafc360c055272cbfc754120181435dd8f51e4cd"
+}

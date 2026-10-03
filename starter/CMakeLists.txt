@@ -5,6 +5,23 @@
 cmake_minimum_required (VERSION 3.15)
 project (Radioss_Starter)
 
+# The v67 compatibility extlib (see EXTLIB_VERSION.json) ships a reader that
+# lacks the newer selection APIs, so the legacy compatibility paths default
+# to ON. Set them to OFF when building against an extlib >= v82.
+option(HM_READER_LEGACY_INCLUDE_API
+       "Enumerate model includes through the legacy reader selection API" ON)
+if(HM_READER_LEGACY_INCLUDE_API)
+   set_property(SOURCE source/devtools/hm_reader/write_include_files_list.F90
+                APPEND PROPERTY COMPILE_DEFINITIONS HM_READER_LEGACY_INCLUDE_API)
+endif()
+
+option(HM_READER_LEGACY_PART_API
+       "Count elements in the selected part with the legacy reader API" ON)
+if(HM_READER_LEGACY_PART_API)
+   set_property(SOURCE source/devtools/hm_reader/hm_is_part_with_elements.F90
+                APPEND PROPERTY COMPILE_DEFINITIONS HM_READER_LEGACY_PART_API)
+endif()
+
 # Verbose
 # -------
 # set (CMAKE_VERBOSE_MAKEFILE on)
@@ -238,6 +255,16 @@ endif (NOT CMAKE_BUILD_TYPE)
 
 
 
+
+# Default ON: the v67 compatibility reader cannot generate structured ALE
+# meshes (see EXTLIB_VERSION.json). Set to OFF with an extlib >= v82.
+option(HM_READER_NO_STRUCTURED_ALE
+       "Reject /ALE/STRUCTURED_MESH when the input reader lacks its generator" ON)
+if(HM_READER_NO_STRUCTURED_ALE)
+   set_property(SOURCE ${source_directory}/source/devtools/hm_reader/hm_s_ale.F90
+                APPEND PROPERTY COMPILE_DEFINITIONS HM_READER_NO_STRUCTURED_ALE)
+   message(WARNING "This reader compatibility build does not support /ALE/STRUCTURED_MESH")
+endif()
 
 add_executable (${EXEC_NAME} ${source_files} ${c_source_files} ${cpp_source_files} ${Build_includes_directory}/starter_message_description.inc ${Build_includes_directory}/__foo.inc)
 
