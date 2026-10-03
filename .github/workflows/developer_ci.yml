@@ -1,7 +1,7 @@
 name: Developer CI
 
 on:
-  
+
   pull_request:
     # Skip PRs targeting the sandbox branch and any sandbox/* branch, plus workflow-only changes
     branches-ignore:
@@ -15,21 +15,26 @@ env:
   # The commit of the PR to embed it in the build tag
   RADIOSS_SHA_HEADER: ${{ github.event.pull_request.head.sha }}
 
+# CI runs on GitHub-hosted runners inside the OpenCourant build image
+# (ghcr.io/opencourant/linux64-bld-qa, built from
+# https://github.com/OpenCourant/ci-images). This replaces the
+# Altair-internal registry and self-hosted runners inherited from
+# OpenRadioss, which are not accessible to OpenCourant.
+
 jobs:
 
-  # This job is a guard to avoid running CI if workflows files are changed (even if they are not the only ones)
+  # This job is a guard to avoid running CI if workflow files are changed
+  # (even if they are not the only ones). Kept as a safety measure in case
+  # self-hosted runners are added later.
   guard:
-    runs-on: developer_ci   
-    container: 
-      # Registry variable can't be a secret but can be a simple variable defined at organization level
-      image: "internal.artifacts.altair.com/radioss-docker-local/rd-linux64-common:latest"          
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - name: Detect workflow changes
         run: |
           # fetch base branch
           git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
-          
+
           # list changed files in the PR
           changed=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }})
           echo "Files changed in this PR:"
@@ -44,19 +49,15 @@ jobs:
 
   build-for-qa:
     needs: guard
-    if: ${{ github.repository_owner == 'OpenRadioss' }}
-    # concurrency: 
-    #   group: ${{ github.ref_name }}
-    #   cancel-in-progress: true
+    if: ${{ github.repository_owner == 'OpenCourant' }}
 
-    # DEV ONLY # runs-on: ["build","dev","dev_ci"]
-    runs-on: ["build","developer_ci"]
+    runs-on: ubuntu-latest
 
     env:
-      BUILD_NB_THREAD: 2
+      BUILD_NB_THREAD: 4
 
     strategy:
-      # If one job fails othere are canceled
+      # If one job fails others are canceled
       fail-fast: true
       matrix:
         include:
@@ -64,27 +65,19 @@ jobs:
             precision: dp
             os: linux64
             binary: starter
-            image_name: rd-linux64-or-rl8.10-bld-qa:ompi4.1.2-ts11
 
           - build: engine_linux64_gf_ompi
             precision: dp
             os: linux64
             binary: engine
             mpi: ompi
-            image_name: rd-linux64-or-rl8.10-bld-qa:ompi4.1.2-ts11
 
-    container: 
-      # Registry variable can't be a secret but can be a simple variable defined at organization level
-      image: "internal.artifacts.altair.com/radioss-docker-local/${{ matrix.image_name }}"   
-      volumes: 
+    container:
+      image: "ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2"
+      volumes:
         - /etc/localtime:/etc/localtime:ro
 
     steps:
-
-      - name: Clean local exe dir
-        run: |
-          rm -rf exec
-          md5sum exec/* || echo "Nothing in exec/" 
 
       # Get last git modifications, WS is not persistent here
       - uses: actions/checkout@v6
@@ -95,7 +88,7 @@ jobs:
       - name: Running build
         run: |
           echo "Running using ref: refs/pull/${{ github.event.number }}/merge"
-          
+
           mpi_opts=''
           if [ ! -z ${{ matrix.mpi }} ]
           then
@@ -104,14 +97,13 @@ jobs:
 
           cmd="./build_script.sh -release -arch=${{ matrix.os }}_gf -prec=${{ matrix.precision }} -nt=${{ env.BUILD_NB_THREAD }} -static-link $mpi_opts"
           echo "========================================="
-          echo "--  BUILD ${{ matrix.build }} --"   
-          echo "--  $cmd --"   
+          echo "--  BUILD ${{ matrix.build }} --"
+          echo "--  $cmd --"
           echo "========================================="
           source /root/.bashrc
           chmod 755 Compiling_tools/script/*
           chmod 755 ${{ matrix.binary }}/build_script.sh
 
-          md5sum exec/* || echo "Nothing in exec/" 
           mkdir exec
           cd ${{ matrix.binary }}
 
@@ -120,7 +112,7 @@ jobs:
           cd ..
           md5sum exec/* || exit 1
 
-      # Upload artifact (since V4 we can't upload artifact using the same name, each one must be unique) 
+      # Upload artifact (since V4 we can't upload artifact using the same name, each one must be unique)
       - name: Upload built artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -137,61 +129,36 @@ jobs:
 
   build:
     needs: guard
-    if: ${{ github.repository_owner == 'OpenRadioss' }}
-    # concurrency: 
-    #   group: ${{ github.ref_name }}
-    #   cancel-in-progress: true
+    if: ${{ github.repository_owner == 'OpenCourant' }}
 
-    # DEV ONLY # runs-on: ["build","dev","dev_ci"]
-    runs-on: ["build","developer_ci"]
+    runs-on: ubuntu-latest
 
     env:
-      BUILD_NB_THREAD: 2
+      BUILD_NB_THREAD: 4
 
     strategy:
-      # If one job fails othere are canceled
+      # If one job fails others are canceled
       fail-fast: true
       matrix:
         include:
 
-          - build: starter_linux64_gf_sp 
+          - build: starter_linux64_gf_sp
             precision: sp
             os: linux64
             binary: starter
-            image_name: rd-linux64-or-rl10-bld:ompi4.1.2-ts15
 
           - build: engine_linux64_gf_ompi_sp
             precision: sp
-            os: linux64 
+            os: linux64
             binary: engine
             mpi: ompi
-            image_name: rd-linux64-or-rl10-bld:ompi4.1.2-ts15
 
-          # Disabled since error would be seen in ompi version
-          # - build: engine_linux64_gf
-          #   precision: dp
-          #   os: linux64
-          #   binary: engine
-          #   image_name: rd-linux64-or-rl10-bld:ompi4.1.2-ts15
-
-          # - build: engine_linux64_gf_sp
-          #   precision: sp
-          #   os: linux64 
-          #   binary: engine
-          #   image_name: rd-linux64-or-rl10-bld:ompi4.1.2-ts15
-
-    container: 
-      # Registry variable can't be a secret but can be a simple variable defined at organization level
-      image: "internal.artifacts.altair.com/radioss-docker-local/${{ matrix.image_name }}"    
-      volumes: 
+    container:
+      image: "ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2"
+      volumes:
         - /etc/localtime:/etc/localtime:ro
 
     steps:
-
-      - name: Clean local exe dir
-        run: |
-          rm -rf exec
-          md5sum exec/* || echo "Nothing in exec/" 
 
       # Get last git modifications, WS is not persistent here
       - uses: actions/checkout@v6
@@ -202,7 +169,7 @@ jobs:
       - name: Running build
         run: |
           echo "Running using ref: refs/pull/${{ github.event.number }}/merge"
-          
+
           mpi_opts=''
           if [ ! -z ${{ matrix.mpi }} ]
           then
@@ -211,14 +178,13 @@ jobs:
 
           cmd="./build_script.sh -release -arch=${{ matrix.os }}_gf -prec=${{ matrix.precision }} -nt=${{ env.BUILD_NB_THREAD }} -static-link $mpi_opts"
           echo "========================================="
-          echo "--  BUILD ${{ matrix.build }} --"   
-          echo "--  $cmd --"   
+          echo "--  BUILD ${{ matrix.build }} --"
+          echo "--  $cmd --"
           echo "========================================="
           source /root/.bashrc
           chmod 755 Compiling_tools/script/*
           chmod 755 ${{ matrix.binary }}/build_script.sh
 
-          md5sum exec/* || echo "Nothing in exec/" 
           mkdir exec
           cd ${{ matrix.binary }}
 
@@ -227,97 +193,25 @@ jobs:
           cd ..
           md5sum exec/* || exit 1
 
-      # Upload artifact (since V4 we can't upload artifact using the same name, each one must be unique) 
+      # Upload artifact (since V4 we can't upload artifact using the same name, each one must be unique)
       - name: Upload built artifacts
         uses: actions/upload-artifact@v7
         with:
           name: bins-${{ matrix.os }}-${{ matrix.precision }}-${{ matrix.build }}
           path: exec
 
-  code-analysis:
-    needs: guard
-    # We execute after all builds (in // with QA)
-    if: ${{ github.repository_owner == 'OpenRadioss' }}
-
-    # DEV ONLY # runs-on: ["build","dev_devci"]
-    runs-on: ["build","developer_ci"]
-    container: 
-      # Registry variable can't be a secret but can be a simple variable defined at organization level
-      image: "internal.artifacts.altair.com/radioss-docker-local/rd-linux64-or-rl8.10-bld-qa:ompi4.1.2-ts11"     
-      volumes: 
-        - /etc/localtime:/etc/localtime:ro
-
-    env:
-      BUILD_NB_THREAD: 2
-
-    strategy:
-      # If one job fails othere are canceled
-      fail-fast: true
-      matrix:
-        include:
-          - build: starter_linux64_gf
-            precision: dp
-            os: linux64
-            binary: starter
-          - build: engine_linux64_gf_ompi
-            precision: dp
-            os: linux64
-            binary: engine
-            mpi: ompi
-
-    steps:
-
-      - name: Clean local exe dir
-        run: |
-          rm -rf exec
-          md5sum exec/* || echo "Nothing in exec/" 
-
-      # Get last git modifications, WS is not persistent here
-      - uses: actions/checkout@v6
-        with:
-          lfs: 'false'
-          ref: refs/pull/${{ github.event.number }}/merge
-
-      - name: Generate Fortran Signatures
-        run: |
-          source /root/.bashrc
-          cd scripts/gcc_plugin
-          sh build.sh          
-          cd -
-
-      - name: Running build with code analysis
-        run: |
-          echo "Running using ref: refs/pull/${{ github.event.number }}/merge"
-          
-          mpi_opts=''
-          if [ ! -z ${{ matrix.mpi }} ]
-          then
-            mpi_opts="-mpi=${{ matrix.mpi }}"
-          fi
-
-          cmd="./build_script.sh -debug=analysis -arch=${{ matrix.os }}_gf -prec=${{ matrix.precision }} -nt=${{ env.BUILD_NB_THREAD }} -static-link $mpi_opts"
-          echo "========================================="
-          echo "--  BUILD & ANALYSE ${{ matrix.build }} --"   
-          echo "--  $cmd --"   
-          echo "========================================="
-          source /root/.bashrc
-          chmod 755 Compiling_tools/script/*
-          chmod 755 ${{ matrix.binary }}/build_script.sh
-
-          md5sum exec/* || echo "Nothing in exec/" 
-          mkdir exec
-          cd ${{ matrix.binary }}
-
-          eval $cmd
+  # TODO: re-enable once the gcc-plugin based analysis is validated in the
+  # OpenCourant build image. The inherited job depended on the Altair-internal
+  # rd-linux64-or-rl8.10-bld-qa image and self-hosted runners.
+  # code-analysis:
+  #   ...
 
   qa:
     needs: build-for-qa
-    # DEV ONLY # runs-on: ["qa_${{ matrix.os }}","dev"]
-    runs-on: ["qa_${{ matrix.os }}","developer_ci"]
-    container: 
-      # Registry variable can't be a secret but can be a simple variable defined at organization level
-      image: "internal.artifacts.altair.com/radioss-docker-local/rd-linux64-or-rl8.10-bld-qa:ompi4.1.2-ts11"     
-      volumes: 
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2"
+      volumes:
         - /etc/localtime:/etc/localtime:ro
 
     env:
@@ -325,12 +219,11 @@ jobs:
       hm_reader_cfgfiles: ../../hm_cfg_files
       homeuser: /root
       mpi: ompi
-      # DEV ONLY # QA_NB_PROC: 2
-      QA_NB_PROC: 4
+      QA_NB_PROC: 2
       QA_NB_THREAD: 2
-      
+
     strategy:
-      # If one job fails othere are canceled
+      # If one job fails others are canceled
       fail-fast: false
       matrix:
         os: [linux64]
@@ -351,12 +244,6 @@ jobs:
 
       # Download artifacts (since V4 we must download all needed artifacts, we could do it using wildcard but it doesn't work ... see https://github.com/actions/download-artifact/issues/337)
       # Using hard name waiting for this issue to be fixed
-      # - name: Download artifacts
-      #   uses: actions/download-artifact@v8
-      #   with:
-      #     name: bins-${{ matrix.os }}-${{ matrix.precision }}-*
-      #     path: exec
-      #     merge-multiple: true
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
@@ -380,7 +267,7 @@ jobs:
 
       - name: Running qa
         run: |
-          md5sum exec/* || echo "Nothing in exec/" 
+          md5sum exec/* || echo "Nothing in exec/"
           if [ "${{ matrix.precision }}" = "dp" ]
           then
             precision_ext=""
@@ -390,7 +277,7 @@ jobs:
 
           chmod 755 exec/*
           cd qa-tests/scripts
-          chmod 755 or_qa_script or_radioss.pl 
+          chmod 755 or_qa_script or_radioss.pl
           rm -f QA.summary
 
           # Allow root to execute mpi command (we are in docker container as root)
@@ -400,15 +287,13 @@ jobs:
           source ${{ env.homeuser }}/.bashrc
           export LD_LIBRARY_PATH=${{ env.hm_reader_extlib }}/${{ matrix.os }}:$LD_LIBRARY_PATH
 
-
-          # cmd="./or_qa_script ../../exec/engine_${{ matrix.os }}_gf_${{ env.mpi }}${precision_ext}_db 1.0 --env:RAD_CFG_PATH=${{ env.hm_reader_cfgfiles }} --system_run --env:OMP_STACKSIZE=400m --exec_script_args='mpiexec -np ${{ env.QA_NB_PROC }}' --env:OMP_NUM_THREADS=${{ env.QA_NB_THREAD }} --output_failures_stdout --env:ASAN_OPTIONS='new_delete_type_mismatch=0:detect_leaks=0' --xtra_args='--timeoutscript=${{ env.QA_TIMEOUT_PER_TEST }}'"
           cmd="./or_qa_script ../../exec/engine_${{ matrix.os }}_gf_${{ env.mpi }}${precision_ext} 1.0 --env:RAD_CFG_PATH=${{ env.hm_reader_cfgfiles }} --system_run --env:OMP_STACKSIZE=400m --exec_script_args='mpiexec -np ${{ env.QA_NB_PROC }}' --env:OMP_NUM_THREADS=${{ env.QA_NB_THREAD }} --output_failures_stdout --xtra_args='--timeoutscript=${{ env.QA_TIMEOUT_PER_TEST }}' "
           echo "========================================="
-          echo "--  QA ${{ matrix.os }}_${{ matrix.precision }} --"   
-          echo "--  $cmd --"   
+          echo "--  QA ${{ matrix.os }}_${{ matrix.precision }} --"
+          echo "--  $cmd --"
           echo "========================================="
-          eval $cmd 
-          res=$? 
+          eval $cmd
+          res=$?
 
           # Getting failed test
           nbtestsfailed=$(grep "# Runs Failed\s*:" QA.summary | tail -n 1 | awk -F' ' '{print $5}')
@@ -416,45 +301,8 @@ jobs:
           nbtestsok=$(grep "# Runs Successful\s*:" QA.summary | tail -n 1 | awk -F' ' '{print $5}')
 
           if [ $res -gt 0 ] || [ $nbtestsfailed -gt 0 ] || [ $nbtestsok = 0 ]
-          then 
+          then
             # If at least one test is failed we mark the CI as failed
             echo "All tests are not OK, CI is failed"
             exit 1
-          fi 
-
-  # cleanup_artifacts:
-  #   if: ${{ always() && github.repository_owner == 'OpenRadioss' }}
-  #   needs: [qa]
-  #   runs-on: [build,linux64]
-  #   permissions:
-  #     actions: write
-  #     contents: read
-
-  #   steps:
-  #     - name: Delete all artifacts for current run
-  #       uses: actions/github-script@v8
-  #       with:
-  #         script: |
-  #           const artifacts = await github.paginate(
-  #             github.rest.actions.listWorkflowRunArtifacts,
-  #             {
-  #               owner: context.repo.owner,
-  #               repo: context.repo.repo,
-  #               run_id: context.runId,
-  #               per_page: 100,
-  #             }
-  #           );
-
-  #           core.info(`Found ${artifacts.length} artifact(s) for run ${context.runId}.`);
-
-  #           for (const artifact of artifacts) {
-  #             core.info(`Deleting artifact: ${artifact.name} (id=${artifact.id})`);
-  #             await github.rest.actions.deleteArtifact({
-  #               owner: context.repo.owner,
-  #               repo: context.repo.repo,
-  #               artifact_id: artifact.id,
-  #             });
-  #           }
-
-  #           core.info('Artifact cleanup completed.');
-
+          fi
