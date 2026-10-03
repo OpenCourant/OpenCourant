@@ -1,41 +1,42 @@
 name: PR Merge CI MAIN
 
+# Post-merge CI for the main branch. Runs on GitHub-hosted runners inside
+# the OpenCourant build image (ghcr.io/opencourant/linux64-bld-qa, built
+# from https://github.com/OpenCourant/ci-images). This replaces the
+# Altair-internal registry, self-hosted runners, mail relay, Perforce sync
+# and branch-closing machinery inherited from OpenRadioss, none of which
+# are accessible to OpenCourant. Failures surface as failed workflow runs.
+#
+# TODO(windows): the inherited Windows build/QA jobs are disabled for now.
+# They required self-hosted Windows runners with the Intel oneAPI
+# toolchain plus a private EXTRA repository for runtime libraries.
+# Restore them once OpenCourant has Windows build infrastructure.
+
 on:
 
   push:
     branches:
       - main
 
+  workflow_dispatch:
+
 env:
-  CLOSE_BRANCH: 0
-  TEAM_RESTRICTIVE_CLOSED_BRANCH: ${{ secrets.TEAM_RESTRICTIVE_CLOSED_BRANCH }}
-  FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
-  TO_EMAIL: "${{ secrets.TO_EMAIL }}"
-  MAIL_RELAY: ${{ secrets.MAIL_RELAY }}
   QA_TIMEOUT_PER_TEST_LINUX: 150
-  QA_TIMEOUT_PER_TEST_WIN: 500
   # The current commit to embed it in the build tag
   RADIOSS_SHA_HEADER: ${{ github.sha }}
 
 jobs:
 
   build_linux:
-    if: ${{ github.repository_owner == 'OpenRadioss' }}
-    # DEV ONLY # runs-on: ["${{ matrix.build }}","dev_pmci"]
-    runs-on: ["${{ matrix.build }}","prmerge_ci"]
-    container: 
-      # Registry variable can't be a secret but can be a simple variable defined at organization level
-      image: "${{ vars.DOCKER_REGISTRY }}/rd-linux64-or-rl8.10-bld-qa:ompi4.1.2-ts11"
-      credentials: 
-        username: ${{ secrets.DOCKER_REGISTRY_USER }}
-        password: ${{ secrets.DOCKER_REGISTRY_PASSWD }}  
-      volumes: 
+    if: ${{ github.repository_owner == 'OpenCourant' }}
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2"
+      volumes:
         - /etc/localtime:/etc/localtime:ro
 
     env:
-      BUILD_NB_THREAD: 2
-      STATUS_BUILD: 0
-      SERVBOT_PAT: ${{ secrets.SERVBOT_PAT }}
+      BUILD_NB_THREAD: 4
 
     strategy:
       # If one job fails others are canceled
@@ -71,44 +72,17 @@ jobs:
 
           - build: engine_linux64_gf_sp
             precision: sp
-            os: linux64 
+            os: linux64
             binary: engine
 
     steps:
 
-      # Set the working dir suffixed with branch name
-      - name: Set workdir 
-        run: |
-          if [ "${{ github.base_ref }}" = "" ]
-          then
-            echo "WORKDIR=${{github.ref_name}}" >> $GITHUB_ENV
-          else
-            echo "WORKDIR=${{github.base_ref}}" >> $GITHUB_ENV
-          fi
-
-          # DEV ONLY #
-          # echo "WORKDIR=main" >> $GITHUB_ENV
-
-      - name: Create branch oriented WS directory & integration WS
-        run: |
-          mkdir -p ${{ env.WORKDIR }}
-
-      - name: Clean local exe dir
-        working-directory: ${{ env.WORKDIR }}
-        run: |
-          rm -rf exec
-          md5sum exec/* || echo "Nothing in exec/" 
-
-      # Get last git modifications, don't clean before (way to keep persistent obj files)
       - name: Checkout git sources
         uses: actions/checkout@v6
         with:
-          path: ${{ env.WORKDIR }}
-          clean: 'false'
           lfs: 'false'
 
       - name: Running build
-        working-directory: ${{ env.WORKDIR }}
         run: |
           mpi_opts=''
           if [ ! -z ${{ matrix.mpi }} ]
@@ -118,119 +92,42 @@ jobs:
 
           cmd="./build_script.sh -release -arch=${{ matrix.os }}_gf -prec=${{ matrix.precision }} -nt=${{ env.BUILD_NB_THREAD }} -static-link $mpi_opts"
           echo "========================================="
-          echo "--  BUILD ${{ matrix.build }} --"   
-          echo "--  $cmd --"   
+          echo "--  BUILD ${{ matrix.build }} --"
+          echo "--  $cmd --"
           echo "========================================="
           source /root/.bashrc
           chmod 755 Compiling_tools/script/*
-          chmod 755 ${{ matrix.binary }}/build_script.sh 
+          chmod 755 ${{ matrix.binary }}/build_script.sh
 
-          md5sum exec/* || echo "Nothing in exec/" 
           mkdir exec
           cd ${{ matrix.binary }}
           eval $cmd
           cd ..
 
-          # Exiting with failure is no bins generated, should be handle by build_script soon
+          # Exit with failure if no binaries were generated
           md5sum exec/* || exit 1
-         
-          # Set correct end of step status (if not an email will be sent)
-          echo "STATUS_BUILD=1" >> $GITHUB_ENV
-
-      - name: Managing step execution
-        if: ${{ always() }}
-        run: |
-
-          MAILMSG="Some error(s) has(ve) been raised during workflow execution:\n\n"
-          echo -e "\n#### STATUS_STEP_BUILD ${{ matrix.build }} ###"
-          if [ "$STATUS_BUILD" = 0 ]
-          then
-            echo -e "Status\t[ \033[31;2;1mFAILED\033[0m ]" 
-            MAILMSG+="The build ${{ matrix.build }} has failed \n"
-
-            # Send email 
-            # Close the branch 
-            echo "CLOSE_BRANCH=1" >> $GITHUB_ENV
-
-            # Setting SMTP server (docker host)
-            DOCKER_HOST=`/sbin/ip route|awk '/default/ { print $3 }'`
-            echo "set smtp=smtp://${DOCKER_HOST}:25" >> /etc/mail.rc 
-
-            # Print message in log 
-            echo -e $MAILMSG
-
-            # Send email
-            echo -e "$MAILMSG\nThe branch is closed" | Mail -r $FROM_EMAIL -s "Error in Github CI repo ${{ github.repository }} (${{github.sha}})" $TO_EMAIL
-
-            # Exit fail to see it as a failure 
-            exit 1
-
-          else
-            echo -e "Status\t[ \033[32;2;1mOK\033[0m ]"
-          fi
 
       # Upload artifact (since V4 we can't upload artifact using the same name, each one must be unique)
       - name: Upload built artifacts
         uses: actions/upload-artifact@v7
         with:
           name: bins-${{ matrix.os }}-${{ matrix.precision }}-${{ matrix.build }}
-          path: ${{ env.WORKDIR }}/exec
-        if: ${{ env.CLOSE_BRANCH == 0 }} 
+          path: exec
 
       # We upload extlib only once, arbitrary choice
       - name: Upload extlib artifacts
         uses: actions/upload-artifact@v7
         with:
           name: extlib.zip
-          path: ${{ env.WORKDIR }}/extlib.zip
-        if: ${{ matrix.build == 'starter_linux64_gf' && env.CLOSE_BRANCH == 0 }}
-
-      # Close the branch (= restrict push to team devopsadmins) if needed
-      # Owner is not mandatory here ... PAT is sufficient ??? seems that as servbot has permissions on this repo so his PAT is sufficient ...
-      - uses: octokit/request-action@v3.x
-        id: close_branch_build
-        env:
-          GITHUB_TOKEN: ${{ env.SERVBOT_PAT }}
-          REQUEST_BODY: "['${{ env.TEAM_RESTRICTIVE_CLOSED_BRANCH}}']"
-        with:
-          route: PUT /repos/${{ github.repository }}/branches/main/protection/restrictions/teams
-          data: ${{ env.REQUEST_BODY }}
-        if: ${{ always() && env.CLOSE_BRANCH == 1 }} 
-
-      # It the closing went wrong we send an email
-      - name: "Check result of closing branch and warn if it fails"
-        run: |
-          # No need to configure SMTP server, already done in previous steps
-
-          MAILMSG="Some error(s) has(ve) been raised during workflow execution:\n\n"
-          MAILMSG+="A branch closing is needed but has failed\n\n"
-          MAILMSG+="Return status API is : ${{ steps.close_branch_build.outputs.status }}\n\n"
-          MAILMSG+="Check more detailed datas in CI logs\n"
-
-          # Print message in log 
-          echo -e $MAILMSG
-          echo -e "\nClose return data API is : ${{ steps.close_branch_build.outputs.data }}"
-
-          # Send email
-          echo -e "$MAILMSG" | Mail -r $FROM_EMAIL -s "Error in Github CI repo ${{ github.repository }} (${{github.sha}}) on closing branch" $TO_EMAIL
-
-          # Exit fail to see it as a failure
-          exit 1
-
-        if: ${{ always() && env.CLOSE_BRANCH == 1 && steps.close_branch_build.outputs.status != 200 }} 
-
+          path: extlib.zip
+        if: ${{ matrix.build == 'starter_linux64_gf' }}
 
   qa_linux:
     needs: build_linux
-    # DEV ONLY # runs-on: ["qa_${{ matrix.os }}","dev"]
-    runs-on: ["qa_${{ matrix.os }}","prmerge_ci"]
-    container: 
-      # Registry variable can't be a secret but can be a simple variable defined at organization level
-      image: "${{ vars.DOCKER_REGISTRY }}/rd-linux64-or-rl8.10-bld-qa:ompi4.1.2-ts11"
-      credentials: 
-        username: ${{ secrets.DOCKER_REGISTRY_USER }}
-        password: ${{ secrets.DOCKER_REGISTRY_PASSWD }}  
-      volumes: 
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2"
+      volumes:
         - /etc/localtime:/etc/localtime:ro
 
     env:
@@ -238,10 +135,7 @@ jobs:
       hm_reader_cfgfiles: ../../hm_cfg_files
       homeuser: /root
       mpi: ompi
-      STATUS_QA: 0
-      SERVBOT_PAT: ${{ secrets.SERVBOT_PAT }}
-      # DEV ONLY # QA_NB_PROC: 2
-      QA_NB_PROC: 4
+      QA_NB_PROC: 2
       QA_NB_THREAD: 2
 
     strategy:
@@ -251,7 +145,7 @@ jobs:
         os: [linux64]
         # precision: [dp,sp]
         precision: [dp]
-        
+
     steps:
 
       # Get git related to the commit
@@ -266,23 +160,15 @@ jobs:
 
       # Download artifacts (since V4 we must download all needed artifacts, we could do it using wildcard but it doesn't work ... see https://github.com/actions/download-artifact/issues/337)
       # Using hard name waiting for this issue to be fixed
-      # - name: Download artifacts
-      #   uses: actions/download-artifact@v8
-      #   with:
-      #     name: bins-${{ matrix.os }}-${{ matrix.precision }}-*
-      #     path: exec
-      #     merge-multiple: true
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
-          # name: "bins-${{ matrix.os }}-${{ matrix.precision }}-*"
           name: bins-${{ matrix.os }}-${{ matrix.precision }}-starter_linux64_gf
           path: exec
           merge-multiple: true
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
-          # name: "bins-${{ matrix.os }}-${{ matrix.precision }}-*"
           name: bins-${{ matrix.os }}-${{ matrix.precision }}-engine_linux64_gf_ompi
           path: exec
           merge-multiple: true
@@ -297,7 +183,7 @@ jobs:
 
       - name: Running qa
         run: |
-          md5sum exec/* || echo "Nothing in exec/" 
+          md5sum exec/* || echo "Nothing in exec/"
           if [ "${{ matrix.precision }}" = "dp" ]
           then
             precision_ext=""
@@ -308,7 +194,7 @@ jobs:
           chmod 755 exec/*
           cd qa-tests/scripts
           rm -f QA.summary
-          chmod 755 or_qa_script or_radioss.pl 
+          chmod 755 or_qa_script or_radioss.pl
 
           # Allow root to execute mpi command (we are in docker container as root)
           export OMPI_ALLOW_RUN_AS_ROOT=1
@@ -319,483 +205,27 @@ jobs:
 
           cmd="./or_qa_script ../../exec/engine_${{ matrix.os }}_gf_${{ env.mpi }}${precision_ext} 1.0 --env:RAD_CFG_PATH=${{ env.hm_reader_cfgfiles }} --system_run --env:OMP_STACKSIZE=400m --exec_script_args='mpiexec -np ${{ env.QA_NB_PROC }}' --env:OMP_NUM_THREADS=${{ env.QA_NB_THREAD }} --output_failures_stdout --xtra_args='--timeoutscript=${{ env.QA_TIMEOUT_PER_TEST_LINUX }}' "
           echo "========================================="
-          echo "--  QA ${{ matrix.os }}_${{ matrix.precision }} --"   
-          echo "--  $cmd --"   
+          echo "--  QA ${{ matrix.os }}_${{ matrix.precision }} --"
+          echo "--  $cmd --"
           echo "========================================="
           eval $cmd
-          res=$? 
+          res=$?
 
           # Getting failed test
           nbtestsfailed=$(grep "# Runs Failed\s*:" QA.summary | tail -n 1 | awk -F' ' '{print $5}')
           # Checking if no test has run at all (maybe exec errors)
           nbtestsok=$(grep "# Runs Successful\s*:" QA.summary | tail -n 1 | awk -F' ' '{print $5}')
 
-          if [ $res = 0 ] && [ $nbtestsfailed = 0 ] && [ $nbtestsok -gt 0 ]
-          then 
-            # Set correct end of step status (if not an email will be sent)
-            echo "STATUS_QA=1" >> $GITHUB_ENV
-          fi      
-
-      - name: Managing step execution
-        if: ${{ always() }}
-        run: |
-
-          MAILMSG="Some error(s) has(ve) been raised during workflow execution:\n\n"
-          echo -e "\n#### STATUS_STEP_QA ###"
-          if [ "$STATUS_QA" = 0 ]
+          if [ $res -gt 0 ] || [ $nbtestsfailed -gt 0 ] || [ $nbtestsok = 0 ]
           then
-            echo -e "Status\t[ \033[31;2;1mFAILED\033[0m ]" 
-            MAILMSG+="The QA ${{ matrix.os }}-${{ matrix.precision }} has failed \n"
-
-            # Send email 
-            # Close the branch 
-            echo "CLOSE_BRANCH=1" >> $GITHUB_ENV
-
-            # Setting SMTP server (docker host)
-            DOCKER_HOST=`/sbin/ip route|awk '/default/ { print $3 }'`
-            echo "set smtp=smtp://${DOCKER_HOST}:25" >> /etc/mail.rc 
-
-            # Print message in log 
-            echo -e $MAILMSG
-
-            # Send email
-            echo -e "$MAILMSG\nThe branch is closed" | Mail -r $FROM_EMAIL -s "Error in Github CI repo ${{ github.repository }} (${{github.sha}})" $TO_EMAIL
-
-            # Exit fail to see it as a failure
+            echo "All tests are not OK, CI is failed"
             exit 1
-
-          else
-            echo -e "Status\t[ \033[32;2;1mOK\033[0m ]"
           fi
 
-      # Close the branch (= restrict push to team devopsadmins) if needed
-      # Owner is not mandatory here ... PAT is sufficient ??? seems that as servbot has permissions on this repo so his PAT is sufficient ...
-      - uses: octokit/request-action@v3.x
-        id: close_branch_qa
-        env:
-          GITHUB_TOKEN: ${{ env.SERVBOT_PAT }}
-          REQUEST_BODY: "['${{ env.TEAM_RESTRICTIVE_CLOSED_BRANCH}}']"
-        with:
-          route: PUT /repos/${{ github.repository }}/branches/main/protection/restrictions/teams
-          data: ${{ env.REQUEST_BODY }}
-        if: ${{ always() && env.CLOSE_BRANCH == 1 }} 
-
-      # It the closing went wrong we send an email
-      - name: "Check result of closing branch and warn if it fails"
-        run: |
-          # No need to configure SMTP server, already done in previous steps
-
-          MAILMSG="Some error(s) has(ve) been raised during workflow execution:\n\n"
-          MAILMSG+="A branch closing is needed but has failed\n\n"
-          MAILMSG+="Return status API is : ${{ steps.close_branch_qa.outputs.status }}\n\n"
-          MAILMSG+="Check more detailed datas in CI logs\n"
-
-          # Print message in log 
-          echo -e $MAILMSG
-          echo -e "\nClose return data API is : ${{ steps.close_branch_qa.outputs.data }}"
-
-          # Send email
-          echo -e "$MAILMSG" | Mail -r $FROM_EMAIL -s "Error in Github CI repo ${{ github.repository }} (${{github.sha}}) on closing branch" $TO_EMAIL
-
-          # Exit fail to see it as a failure
-          exit 1
-
-        if: ${{ always() && env.CLOSE_BRANCH == 1 && steps.close_branch_qa.outputs.status != 200 }} 
-
-
-  build_windows_no_container:
-    if: ${{ github.repository_owner == 'OpenRadioss' }}
-    runs-on: ["${{ matrix.build }}","prmerge_ci"]
- 
-    env:
-      BUILD_NB_THREAD: 2
-      STATUS_BUILD: 0
-      SERVBOT_PAT: ${{ secrets.SERVBOT_PAT }}
-      CLOSE_BRANCH: 0
-
-    strategy:
-      # If one job fails others are canceled
-      fail-fast: true
-      matrix:
-        include:
-          - build: starter_win64
-            precision: dp
-            os: win64
-            binary: starter
-
-          - build: starter_win64_sp
-            precision: sp
-            os: win64
-            binary: starter
-
-          - build: engine_win64_impi
-            precision: dp
-            os: win64
-            binary: engine
-            mpi: impi
-
-          - build: engine_win64_impi_sp
-            precision: sp
-            os: win64
-            binary: engine
-            mpi: impi
-
-          - build: engine_win64
-            precision: dp
-            os: win64
-            binary: engine
-
-          - build: engine_win64_sp
-            precision: sp
-            os: win64
-            binary: engine
-
-    steps:
-
-      # Set the working dir suffixed with branch name
-      - name: Set workdir 
-        run: |
-          if ([string]::IsNullOrEmpty($env:GITHUB_BASE_REF)) {
-            Add-Content -Path $env:GITHUB_ENV -Value "WORKDIR=$env:GITHUB_REF_NAME"
-          } 
-          else {
-            Add-Content -Path $env:GITHUB_ENV -Value "WORKDIR=$env:GITHUB_BASE_REF"
-          }          
-
-      - name: Create branch oriented WS directory & integration WS (WIN64)
-        run: |
-          $dir2create = "$env:WORKDIR"
-          if (-not (Test-Path -Path $dir2create)) {
-            New-Item -Path $dir2create -ItemType "Directory"
-          }
-
-      - name: Clean local exe dir
-        working-directory: ${{ env.WORKDIR }}
-        run: |
-          $dir2remove = "exec"
-          if (Test-Path -Path $dir2remove) {
-            Remove-Item -Path $dir2remove -Recurse -Force
-          }
-
-      # Get last git modifications, don't clean before (way to keep persistent obj files)
-      - name: Checkout git sources
-        uses: actions/checkout@v6
-        with:
-          path: ${{ env.WORKDIR }}
-          clean: 'false'
-          lfs: 'false'
-
-      - name: Running builds
-        working-directory: ${{ env.WORKDIR }}
-        run: |
-          cd ${{ matrix.binary }}
-          @"
-          @echo off
-          call 'C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat'
-          call 'C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat'
-          call 'C:\Program Files (x86)\Intel\oneAPI\mpi\2021.10.0\env\vars.bat'
-          cmake --version
-          ninja --version
-          if not '${{ matrix.mpi }}'=='' (
-            set mpi_opts=-mpi=${{ matrix.mpi }}
-          )   
-          echo =========================================
-          echo --  BUILD ${{ matrix.build }} --
-          echo =========================================
-          .\build_windows.bat -release -arch=${{ matrix.os }} -prec=${{ matrix.precision }} -nt=$env:BUILD_NB_THREAD %mpi_opts%
-          "@ -replace "'", '"' | Out-File -FilePath myrun.bat -Encoding ASCII
-          cmd /c .\myrun.bat    
-          cd ..
-          $directoryPath = "exec"
-          if (Test-Path -Path $directoryPath) {
-              $files = Get-ChildItem -Path $directoryPath
-              if ($files.Count -eq 0) {
-                  Write-Output "The directory is empty."
-                  exit 1
-              } else {
-                  # Display the contents of the directory
-                  $files | ForEach-Object { Write-Output $_.FullName }
-              }
-          } else {
-              Write-Output "The directory does not exist."
-              exit 1
-          }
-          Add-Content -Path $env:GITHUB_ENV -Value "STATUS_BUILD=1"
-
-      - name: Managing step execution
-        if: ${{ always() }}
-        run: |
-          $MAILMSG = "Some error(s) has(ve) been raised during workflow execution:`r`n`r`n"
-          Write-Output "`r`n#### STATUS_STEP_BUILD ${{ matrix.build }} ($env:STATUS_BUILD) ###"
-          if ($env:STATUS_BUILD -eq 0) {
-            Write-Output "Status`t[ $([char]27)[31;2;1mFAILED$([char]27)[0m ]"
-            $MAILMSG += "The build ${{ matrix.build }} has failed `r`n"
-            Add-Content -Path $env:GITHUB_ENV -Value "CLOSE_BRANCH=1"
-            $ALL_RECIPIENTS = $env:TO_EMAIL -split ","
-            Send-MailMessage -SmtpServer $env:MAIL_RELAY -From $env:FROM_EMAIL -To $ALL_RECIPIENTS -Subject "Error in Github CI repo ${{ github.repository }} (${{github.sha}})" -Body $MAILMSG -Port 25
-            exit 1
-          }
-          else {
-            Write-Output "Status`t[ $([char]27)[32;2;1mOK$([char]27)[0m ]"
-          }
-
-      # Upload artifact (since V4 we can't upload artifact using the same name, each one must be unique)
-      - name: Upload built artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: bins-${{ matrix.os }}-${{ matrix.precision }}-${{ matrix.build }}
-          path: ${{ env.WORKDIR }}/exec
-        if: ${{ env.CLOSE_BRANCH == 0 }}           
-
-      # Close the branch (= restrict push to team devopsadmins) if needed
-      # Owner is not mandatory here ... PAT is sufficient ??? seems that as servbot has permissions on this repo so his PAT is sufficient ...
-      - name: Close the branch if errors
-        uses: octokit/request-action@v3.x
-        id: close_branch_build
-        env:
-          GITHUB_TOKEN: ${{ env.SERVBOT_PAT }}
-          REQUEST_BODY: "['${{ env.TEAM_RESTRICTIVE_CLOSED_BRANCH}}']"
-        with:
-          route: PUT /repos/${{ github.repository }}/branches/main/protection/restrictions/teams
-          data: ${{ env.REQUEST_BODY }}
-        if: ${{ always() && env.CLOSE_BRANCH == 1 }}         
-
-      # If the closing went wrong we send an email
-      - name: "Check result of closing branch and warn if it fails"
-        run: |
-          $MAILMSG = "Some error(s) has(ve) been raised during workflow execution:`r`n`r`n"
-          $MAILMSG += "A branch closing is needed but has failed`r`n`r`n"
-          $MAILMSG += "Return status API is : ${{ steps.close_branch_build.outputs.status }}`r`n`r`n"
-          $MAILMSG += "Check more detailed datas in CI logs`r`n"
-          Write-Output "`r`nClose return API is : ${{ steps.close_branch_build.outputs.status }} / ${{ steps.close_branch_build.outputs.data }}";
-          $ALL_RECIPIENTS = $env:TO_EMAIL -split ","
-          Send-MailMessage -SmtpServer $env:MAIL_RELAY -From $env:FROM_EMAIL -To $ALL_RECIPIENTS -Subject "Error in Github CI repo ${{ github.repository }} (${{github.sha}}) on closing branch" -Body $MAILMSG -Port 25
-          exit 1
-        if: ${{ always() && env.CLOSE_BRANCH == 1 && steps.close_branch_build.outputs.status != 200 }} 
-
-  qa_windows_no_container:
-    # QA windows needs build linux because extlib is provided as artifact there
-    needs: [build_linux,build_windows_no_container]
-    runs-on: ["qa_${{ matrix.os }}","prmerge_ci"]
-
-    env:
-      hm_reader_extlib: ../../extlib/hm_reader
-      hm_reader_cfgfiles: ../../hm_cfg_files
-      oneapi_exlib: ../../EXTRA/win64/extlib/intelOneAPI_runtime
-      mpi: impi
-      STATUS_QA: 0
-      SERVBOT_PAT: ${{ secrets.SERVBOT_PAT }}
-      # DEV ONLY # QA_NB_PROC: 2
-      QA_NB_PROC: 4
-      QA_NB_THREAD: 2
-
-    strategy:
-      # If one job fails others continue
-      fail-fast: false
-      matrix:
-        os: [win64]
-        # precision: [dp,sp]
-        precision: [dp]
-        
-    steps:
-
-      # Get git related to the commit
-      - name: Checkout git sources
-        uses: actions/checkout@v6
-        with:
-          lfs: 'false'
-
-      # Get OpenRadioss extras from dedicated repository
-      - name: Checkout git EXTRA sources
-        uses: actions/checkout@v6
-        with:
-          lfs: 'true'
-          clean: 'false'
-          repository: '${{ secrets.EXTRA_REPOSITORY }}'
-          path: 'EXTRA'
-          token: '${{ secrets.EXTRA_REPOSITORY_PAT }}'
-
-      - name: Clean local exe dir
-        shell: cmd
-        run: >
-          call C:\cygwin64\bin\bash --login -c "
-          cd %cd:\=/%;
-          rm -rf exec;
-          "
-
-      # Download artifacts (since V4 we must download all needed artifacts, we could do it using wildcard but it doesn't work ... see https://github.com/actions/download-artifact/issues/337)
-      # Using hard name waiting for this issue to be fixed
-      # - name: Download artifacts
-      #   uses: actions/download-artifact@v8
-      #   with:
-      #     name: bins-${{ matrix.os }}-${{ matrix.precision }}-*
-      #     path: exec
-      #     merge-multiple: true
-      - name: Download artifacts
-        uses: actions/download-artifact@v8
-        with:
-          # name: "bins-${{ matrix.os }}-${{ matrix.precision }}-*"
-          name: bins-${{ matrix.os }}-${{ matrix.precision }}-starter_win64
-          path: exec
-          merge-multiple: true
-      - name: Download artifacts
-        uses: actions/download-artifact@v8
-        with:
-          # name: "bins-${{ matrix.os }}-${{ matrix.precision }}-*"
-          name: bins-${{ matrix.os }}-${{ matrix.precision }}-engine_win64_impi
-          path: exec
-          merge-multiple: true
-      - name: Download extlib artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: extlib.zip
-          
-      - name: Running qa
-        # Running cygwin from powershell or cmd => neither identation nor comment !
-        shell: cmd
-        run: >
-          call "C:\Program Files (x86)\Intel\oneAPI\mpi\2021.10.0\env\vars.bat" && C:\cygwin64\bin\bash --login -c "
-          cd %cd:\=/%;
-          md5sum exec/* || echo \"Nothing in exec/\";
-          if [ \"${{ matrix.precision }}\" = \"dp\" ];
-          then
-          precision_ext='';
-          else
-          precision_ext=\"_${{ matrix.precision }}\";
-          fi;
-          /cygdrive/c/mybin/clean_win10.pl;
-          unzip extlib.zip;
-          chmod -R 755 extlib/*;
-          cd qa-tests/scripts;
-          rm -f QA.summary;
-          export PATH=${{ env.hm_reader_extlib }}/${{ matrix.os }}:$PATH;
-          export PATH=${{ env.oneapi_exlib }}/${{ matrix.os }}:$PATH;
-          cmd=\"./or_qa_script ../../exec/engine_${{ matrix.os }}_${{ env.mpi }}${precision_ext} 1.0 --env:RAD_CFG_PATH=${{ env.hm_reader_cfgfiles }} --system_run --env:KMP_STACKSIZE=400m --exec_script_args='mpiexec -np ${{ env.QA_NB_PROC }}' --env:OMP_NUM_THREADS=${{ env.QA_NB_THREAD }} --output_failures_stdout --xtra_args='--timeoutscript=${{ env.QA_TIMEOUT_PER_TEST_WIN }}' \";
-          echo \"=========================================\";
-          echo \"--  QA ${{ matrix.os }}_${{ matrix.precision }} --\"; 
-          echo \"--  $cmd --\";   
-          echo \"=========================================\";
-          eval $cmd || exit 1; 
-          res=$?;
-          nbtestsfailed=$(grep \"# Runs Failed\s*:\" QA.summary | tail -n 1 | awk -F' ' '{print $5}');
-          nbtestsok=$(grep \"# Runs Successful\s*:\" QA.summary | tail -n 1 | awk -F' ' '{print $5}');
-          if [ $res = 0 ] && [ $nbtestsfailed = 0 ] && [ $nbtestsok -gt 0 ];
-          then 
-          echo \"STATUS_QA=1\" >> $GITHUB_ENV;
-          fi;   
-          "
-
-      - name: Managing step execution
-        if: ${{ always() }}
-        # Running cygwin from powershell or cmd => neither identation nor comment !
-        shell: cmd
-        run: >
-          call C:\cygwin64\bin\bash --login -c "
-          MAILMSG=\"Some error(s) has(ve) been raised during workflow execution:\n\n\";
-          echo -e \"\n#### STATUS_STEP_QA ###\";
-          if [ ${{ env.STATUS_QA }} = 0 ];
-          then
-          echo -e \"Status\t[ \033[31;2;1mFAILED\033[0m ]\";
-          MAILMSG+=\"The QA ${{ matrix.os }}-${{ matrix.precision }} has failed \n\";
-          echo \"CLOSE_BRANCH=1\" >> $GITHUB_ENV;
-          echo -e $MAILMSG;
-          echo -e \"$MAILMSG\nThe branch is closed\" | Email -f $FROM_EMAIL -s \"Error in Github CI repo ${{ github.repository }} (${{github.sha}})\" -r $MAIL_RELAY $TO_EMAIL;
-          exit 1;
-          else
-          echo -e \"Status\t[ \033[32;2;1mOK\033[0m ]\";
-          fi;   
-          "
-
-      # Close the branch (= restrict push to team devopsadmins) if needed
-      # Owner is not mandatory here ... PAT is sufficient ??? seems that as servbot has permissions on this repo so his PAT is sufficient ...
-      - uses: octokit/request-action@v3.x
-        id: close_branch_qa
-        env:
-          GITHUB_TOKEN: ${{ env.SERVBOT_PAT }}
-          REQUEST_BODY: "['${{ env.TEAM_RESTRICTIVE_CLOSED_BRANCH}}']"
-        with:
-          route: PUT /repos/${{ github.repository }}/branches/main/protection/restrictions/teams
-          data: ${{ env.REQUEST_BODY }}
-        if: ${{ always() && env.CLOSE_BRANCH == 1 }}         
-
-      # If the closing went wrong we send an email
-      - name: "Check result of closing branch and warn if it fails"
-        # Running cygwin from powershell or cmd => neither identation nor comment !
-        shell: cmd
-        run: >
-          call C:\cygwin64\bin\bash --login -c "
-          MAILMSG=\"Some error(s) has(ve) been raised during workflow execution:\n\n\";
-          MAILMSG+=\"A branch closing is needed but has failed\n\n\";
-          MAILMSG+=\"Return status API is : ${{ steps.close_branch_qa.outputs.status }}\n\n\";
-          MAILMSG+=\"Check more detailed datas in CI logs\n\";
-          echo -e $MAILMSG;
-          echo -e \"\nClose return data API is : ${{ steps.close_branch_qa.outputs.data }}\";
-          echo -e \"$MAILMSG\" | Email -f $FROM_EMAIL -s \"Error in Github CI repo ${{ github.repository }} (${{github.sha}}) on closing branch\" -r $MAIL_RELAY $TO_EMAIL;
-          exit 1;
-          "
-        if: ${{ always() && env.CLOSE_BRANCH == 1 && steps.close_branch_qa.outputs.status != 200 }} 
-
-
-  # Call the sync CI if build and qa are OK 
-  # Secrets variables must be passed
-  call-workflow-sync-git2perforce:
-    needs: [qa_linux,qa_windows_no_container]
-    uses: ./.github/workflows/prmerge_ci_sync.yml
-    secrets: 
-      DOCKER_REGISTRY_USER: ${{secrets.DOCKER_REGISTRY_USER}}
-      DOCKER_REGISTRY_PASSWD: ${{secrets.DOCKER_REGISTRY_PASSWD}}
-      SERVBOT_PAT: ${{ secrets.SERVBOT_PAT }}
-      FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
-      TO_EMAIL: ${{ secrets.TO_EMAIL }} 
-      GITLAB_PAT: "${{ secrets.GITLAB_PAT }}"
-      GITLAB_REPO_URL: "${{ secrets.GITLAB_REPO_URL }}"
-      GITLAB_SERVBOT_USER: ${{ secrets.GITLAB_SERVBOT_USER }}
-      GITLAB_SERVBOT_EMAIL: ${{ secrets.GITLAB_SERVBOT_EMAIL }}      
-
-  update_counters:
-    # DEV ONLY # runs-on: dev_delivery
-    # runs-on: dev_delivery
-    if: ${{ github.repository_owner == 'OpenRadioss' }} 
-    runs-on: delivery   
-    container: 
-      # Registry variable can't be a secret but can be a simple variable defined at organization level
-      image: "${{ vars.DOCKER_REGISTRY }}/rd-linux64-common:latest"
-      credentials: 
-        username: ${{ secrets.DOCKER_REGISTRY_USER }}
-        password: ${{ secrets.DOCKER_REGISTRY_PASSWD }}  
-      volumes: 
-         - /etc/localtime:/etc/localtime:ro
-         # DEV ONLY # - /github_download_counter_dev:/github_download_counter 
-         - /github_download_counter:/github_download_counter
-
-    env:
-      SERVBOT_USER: ${{ secrets.SERVBOT_USER }}
-      SERVBOT_PAT: ${{ secrets.SERVBOT_PAT }}
-
-    steps:
-
-      - name: Set variables
-        run: |
-          echo "DATEOFTHEDAY=`date +'%Y%m%d'`" >> $GITHUB_ENV
-
-      - name:  
-        run: |
-            cd /github_download_counter
-
-            # Do some before using some lock and retry stuff
-            cp download_count.json sav-merge-main-${{ env.DATEOFTHEDAY }}-download_count.json
-
-            github_download_count.py \
-              --git_api_url ${{ github.api_url }} \
-              --git_repo ${{ github.repository }} \
-              --git_user $SERVBOT_USER \
-              --git_token $SERVBOT_PAT \
-              --action update_values      
-                
   cleanup_artifacts:
-    if: ${{ always() && github.repository_owner == 'OpenRadioss' }}
-    needs: [qa_linux, qa_windows_no_container]
-    runs-on: [build,linux64]
+    if: ${{ always() && github.repository_owner == 'OpenCourant' }}
+    needs: [qa_linux]
+    runs-on: ubuntu-latest
     permissions:
       actions: write
       contents: read
@@ -826,4 +256,4 @@ jobs:
               });
             }
 
-            core.info('Artifact cleanup completed.');                            
+            core.info('Artifact cleanup completed.');
