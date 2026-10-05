@@ -31,6 +31,7 @@ permissions:
 
 env:
   QA_TIMEOUT_PER_TEST_LINUX: 150
+  QA_TIMEOUT_PER_TEST_WIN: 500
 
 jobs:
 
@@ -305,8 +306,322 @@ jobs:
             exit 1
           fi
 
+  build_windows:
+    needs: set_tag
+    # windows-2022: the VS2026 STL on windows-latest requires Clang 20+,
+    # while icx 2025.0 is Clang 19-based (error STL1000).
+    # SMP variants only; engine_win64_impi* (Intel MPI) deferred.
+    runs-on: windows-2022
+
+    env:
+      BUILD_NB_THREAD: 4
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - build: starter_win64
+            precision: dp
+            binary: starter
+
+          - build: starter_win64_sp
+            precision: sp
+            binary: starter
+
+          - build: engine_win64
+            precision: dp
+            binary: engine
+
+          - build: engine_win64_sp
+            precision: sp
+            binary: engine
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+          ref: ${{ needs.set_tag.outputs.tag }}
+
+      - name: Set up Intel oneAPI
+        uses: ./.github/actions/setup-oneapi-win
+
+      - name: Running build
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvars64.bat"
+          call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat"
+          call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat"
+          echo =========================================
+          echo --  BUILD ${{ matrix.build }} --
+          echo =========================================
+          cd ${{ matrix.binary }}
+          call build_windows.bat -release -arch=win64 -prec=${{ matrix.precision }} -nt=%BUILD_NB_THREAD%
+          cd ..
+          if not exist exec ( echo No exec directory & exit /b 1 )
+          dir exec
+          for /f %%A in ('dir /b /a-d exec ^| find /c /v ""') do if %%A==0 ( echo exec is empty & exit /b 1 )
+
+      - name: Upload built artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: bins-win64-${{ matrix.precision }}-${{ matrix.build }}
+          path: exec
+
+  # Builds the output converters with MSVC (as the Tools build scripts do)
+  # and harvests the Intel runtime DLLs + licenses that upstream shipped in
+  # extlib/intelOneAPI_runtime (the curated list from the archived official
+  # OpenRadioss_win64.zip of latest-20260728).
+  build_tools_windows:
+    needs: set_tag
+    runs-on: windows-2022
+
+    steps:
+
+      - name: Checkout Tools sources
+        uses: actions/checkout@v6
+        with:
+          repository: 'OpenCourant/Tools'
+          lfs: 'true'
+
+      - name: Set up Intel oneAPI
+        uses: ./.github/actions/setup-oneapi-win
+
+      - name: Build output converters
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvars64.bat"
+          cd output_converters\anim_to_vtk\win64
+          call build.bat
+          if errorlevel 1 exit /b 1
+          cd ..\..\th_to_csv\win64
+          call build.bat
+          if errorlevel 1 exit /b 1
+          cd ..\..\..
+          dir exec
+
+      - name: Harvest Intel runtime DLLs and licenses
+        shell: cmd
+        run: |
+          mkdir intelOneAPI_runtime\win64
+          set COMPILER_BIN=C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\bin
+          set MKL_BIN=C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\bin
+          for %%F in (libiomp5md.dll libmmd.dll svml_dispmd.dll) do (
+            copy "%COMPILER_BIN%\%%F" intelOneAPI_runtime\win64\ || exit /b 1
+          )
+          for %%F in (mkl_core.2.dll mkl_def.2.dll mkl_avx2.2.dll mkl_avx512.2.dll mkl_intel_thread.2.dll) do (
+            copy "%MKL_BIN%\%%F" intelOneAPI_runtime\win64\ || exit /b 1
+          )
+          dir intelOneAPI_runtime\win64
+          mkdir intelOneAPI_runtime\license\Compiler
+          mkdir intelOneAPI_runtime\license\MKL
+          for /f "delims=" %%F in ('dir /s /b "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\*third-party-programs*.txt" 2^>nul') do copy "%%F" intelOneAPI_runtime\license\Compiler\
+          for /f "delims=" %%F in ('dir /s /b "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\*third-party-programs*.txt" 2^>nul') do copy "%%F" intelOneAPI_runtime\license\MKL\
+          for /f "delims=" %%F in ('dir /s /b "C:\Program Files (x86)\Intel\oneAPI\*simplified*license*" 2^>nul') do copy "%%F" intelOneAPI_runtime\license\MKL\
+          echo The Intel runtime libraries in this directory are redistributed under the Intel Simplified Software License: https://www.intel.com/content/www/us/en/developer/articles/license/end-user-license-agreement.html > intelOneAPI_runtime\license\NOTICE.txt
+          dir /s intelOneAPI_runtime\license
+
+      - name: Upload converter artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tools-win64
+          path: exec
+
+      - name: Upload Intel runtime artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: intel-runtime-win64
+          path: intelOneAPI_runtime
+
+  # QA gate for the Windows binaries before packaging.
+  qa_release_windows:
+    needs: [set_tag, build_windows]
+    runs-on: windows-2022
+
+    env:
+      QA_NB_THREAD: 2
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+          ref: ${{ needs.set_tag.outputs.tag }}
+
+      - name: Set up Intel oneAPI
+        uses: ./.github/actions/setup-oneapi-win
+
+      - name: Download starter artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: bins-win64-dp-starter_win64
+          path: exec
+          merge-multiple: true
+      - name: Download engine artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: bins-win64-dp-engine_win64
+          path: exec
+          merge-multiple: true
+
+      - name: Download extlib
+        shell: cmd
+        run: |
+          python Compiling_tools\script\load_extlib.py
+          if errorlevel 1 exit /b 1
+
+      # The QA perl scripts need Cygwin (native Windows perl lacks getppid)
+      - name: Install Cygwin with perl
+        shell: cmd
+        run: |
+          curl.exe -s --output %TEMP%\cygsetup.exe --url https://www.cygwin.com/setup-x86_64.exe --retry 5 --retry-delay 5
+          %TEMP%\cygsetup.exe -q -R C:\cygwin64 -s https://mirrors.kernel.org/sourceware/cygwin/ -P perl -l %TEMP%\cygpkgs
+          C:\cygwin64\bin\bash --login -c "perl --version | head -2"
+
+      # Running cygwin from cmd => neither indentation nor comment inside the
+      # bash -c string (same constraint as the inherited OpenRadioss CI)
+      - name: Running qa
+        shell: cmd
+        run: >
+          call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat" &&
+          call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat" &&
+          C:\cygwin64\bin\bash --login -c "
+          cd %cd:\=/%;
+          chmod -R 755 extlib/* exec/* 2>/dev/null;
+          cd qa-tests/scripts;
+          rm -f QA.summary;
+          chmod 755 or_qa_script or_radioss.pl;
+          export PATH=../../extlib/hm_reader/win64:../../extlib/h3d/lib/win64:$PATH;
+          cmd=\"./or_qa_script ../../exec/engine_win64.exe 1.0 --env:RAD_CFG_PATH=../../hm_cfg_files --system_run --env:KMP_STACKSIZE=400m --env:OMP_NUM_THREADS=%QA_NB_THREAD% --output_failures_stdout --xtra_args='--timeoutscript=%QA_TIMEOUT_PER_TEST_WIN%' \";
+          echo \"--  $cmd --\";
+          eval $cmd;
+          res=$?;
+          nbtestsfailed=$(grep \"# Runs Failed\s*:\" QA.summary | tail -n 1 | awk -F' ' '{print $5}');
+          nbtestsok=$(grep \"# Runs Successful\s*:\" QA.summary | tail -n 1 | awk -F' ' '{print $5}');
+          if [ $res -gt 0 ] || [ $nbtestsfailed -gt 0 ] || [ $nbtestsok = 0 ];
+          then
+          echo \"All tests are not OK, delivery is canceled\";
+          exit 1;
+          fi;
+          "
+
+  package_windows:
+    needs: [set_tag, build_linux, build_windows, build_tools_windows]
+    runs-on: ubuntu-latest
+
+    env:
+      MAINDIR: 'OpenCourant'
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+          ref: ${{ needs.set_tag.outputs.tag }}
+
+      - name: Checkout Tools sources
+        uses: actions/checkout@v6
+        with:
+          repository: 'OpenCourant/Tools'
+          lfs: 'true'
+          path: 'TOOLS'
+
+      - name: Download win64 artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: bins-win64-*
+          path: exec_win
+          merge-multiple: true
+      - name: Download converter artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: tools-win64
+          path: exec_win
+          merge-multiple: true
+      - name: Download Intel runtime artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: intel-runtime-win64
+          path: intelOneAPI_runtime
+      - name: Download extlib artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: extlib.zip
+
+      - name: Assemble Windows package
+        run: |
+          set -e
+          unzip -q extlib.zip
+
+          rm -rf todeliver
+          mkdir -p todeliver/${MAINDIR}/exec \
+                   todeliver/${MAINDIR}/extlib/h3d/lib/win64 \
+                   todeliver/${MAINDIR}/extlib/hm_reader \
+                   todeliver/${MAINDIR}/extlib/intelOneAPI_runtime \
+                   todeliver/${MAINDIR}/licenses
+
+          cp -a exec_win/* todeliver/${MAINDIR}/exec/
+          cp -a extlib/h3d/lib/win64/* todeliver/${MAINDIR}/extlib/h3d/lib/win64/
+          cp -a extlib/hm_reader/win64 todeliver/${MAINDIR}/extlib/hm_reader/
+          cp -a intelOneAPI_runtime/* todeliver/${MAINDIR}/extlib/intelOneAPI_runtime/
+          cp -a hm_cfg_files todeliver/${MAINDIR}/
+          cp -a extlib/license/* todeliver/${MAINDIR}/licenses/
+          cp -a TOOLS/openradioss_gui todeliver/${MAINDIR}/
+          cp -a TOOLS/input_converters/inp2rad/inp2rad/inp2rad.py todeliver/${MAINDIR}/openradioss_gui/
+          cp -a COPYRIGHT.md todeliver/${MAINDIR}/
+
+          cd todeliver
+          zip -qr ${MAINDIR}_win64.zip ${MAINDIR}
+          cd ..
+          ls -l todeliver/${MAINDIR}_win64.zip
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v7
+        with:
+          name: OpenCourant_win64
+          path: todeliver/OpenCourant_win64.zip
+
+  # Prove the Windows package runs on a machine without any Intel tooling:
+  # only the DLLs shipped inside the package are on PATH.
+  selftest_windows:
+    needs: [set_tag, package_windows]
+    runs-on: windows-2022
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+          ref: ${{ needs.set_tag.outputs.tag }}
+
+      - name: Download Windows package
+        uses: actions/download-artifact@v8
+        with:
+          name: OpenCourant_win64
+
+      - name: Run a model from the package only
+        shell: cmd
+        run: |
+          mkdir pkg
+          tar -xf OpenCourant_win64.zip -C pkg
+          set OPENCOURANT_PATH=%CD%\pkg\OpenCourant
+          set PATH=%OPENCOURANT_PATH%\extlib\hm_reader\win64;%OPENCOURANT_PATH%\extlib\h3d\lib\win64;%OPENCOURANT_PATH%\extlib\intelOneAPI_runtime\win64;%PATH%
+          set RAD_CFG_PATH=%OPENCOURANT_PATH%\hm_cfg_files
+          set KMP_STACKSIZE=400m
+          set OMP_NUM_THREADS=2
+          cd qa-tests\miniqa\ACCELEROMETRES\data
+          "%OPENCOURANT_PATH%\exec\starter_win64.exe" -i ACCELERO_0000.rad -np 1 > starter.out 2>&1
+          if errorlevel 1 ( type starter.out & echo STARTER FAILED & exit /b 1 )
+          "%OPENCOURANT_PATH%\exec\engine_win64.exe" -i ACCELERO_0001.rad > engine.out 2>&1
+          if errorlevel 1 ( type engine.out & echo ENGINE FAILED & exit /b 1 )
+          findstr /C:"NORMAL TERMINATION" engine.out || ( type engine.out & exit /b 1 )
+
   delivery:
-    needs: [set_tag, build_linux, build_tools, qa_release]
+    needs: [set_tag, build_linux, build_tools, qa_release, build_windows, build_tools_windows, qa_release_windows, package_windows, selftest_windows]
     runs-on: ubuntu-latest
 
     env:
@@ -424,10 +739,24 @@ jobs:
             echo ""
             echo "Executables are in \`exec/\` (Starter and Engine in single and double precision, SMP and OpenMPI, plus anim_to_vtk and th_to_csv converters)."
             echo ""
+            echo "## Windows x86_64 package"
+            echo ""
+            echo "Unzip \`OpenCourant_win64.zip\` and set (cmd.exe):"
+            echo ""
+            echo '```bat'
+            echo 'set OPENCOURANT_PATH=C:\path\to\OpenCourant'
+            echo 'set PATH=%OPENCOURANT_PATH%\extlib\hm_reader\win64;%OPENCOURANT_PATH%\extlib\h3d\lib\win64;%OPENCOURANT_PATH%\extlib\intelOneAPI_runtime\win64;%PATH%'
+            echo 'set RAD_CFG_PATH=%OPENCOURANT_PATH%\hm_cfg_files'
+            echo 'set KMP_STACKSIZE=400m'
+            echo '```'
+            echo ""
+            echo "The required Intel runtime libraries are shipped in \`extlib/intelOneAPI_runtime/win64\` (Intel Simplified Software License, see the bundled license directory)."
+            echo ""
             echo "**Notes**"
-            echo "- The \`_ompi\` Engine requires OpenMPI 4.1.2 installed in \`/opt/openmpi\` (see INSTALL.md); the SMP Engine runs standalone"
-            echo "- \`/ALE/STRUCTURED_MESH\` is not supported by the current (v67 compatibility) input reader and is rejected explicitly"
-            echo "- Windows and Linux arm64 packages are not available yet"
+            echo "- The Linux \`_ompi\` Engine requires OpenMPI 4.1.2 installed in \`/opt/openmpi\` (see INSTALL.md); the SMP Engines run standalone"
+            echo "- The Windows package is SMP only (no MPI Engine yet)"
+            echo "- \`/ALE/STRUCTURED_MESH\` is not supported by the recovered input readers and is rejected explicitly"
+            echo "- A Linux arm64 package is not available yet"
             echo ""
             echo "Thank you for using OpenCourant! 👉 [Share your feedback in GitHub Discussions](https://github.com/${{ github.repository }}/discussions)"
           } > release_body.md
@@ -439,7 +768,8 @@ jobs:
             --verify-tag \
             --title "OpenCourant stable build ${DATEOFTHETAG}" \
             --notes-file release_body.md \
-            todeliver/${MAINDIR}_linux64.zip
+            todeliver/${MAINDIR}_linux64.zip \
+            exec_tmp/OpenCourant_win64/OpenCourant_win64.zip
 
       - name: Clean old github releases and tags
         run: |
