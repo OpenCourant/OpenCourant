@@ -5,9 +5,10 @@
 cmake_minimum_required (VERSION 3.15)
 project (Radioss_Starter)
 
-# The recovered hm_reader binaries (see reader_components in
-# EXTLIB_VERSION.json) lack the newer selection APIs, so the legacy
-# compatibility paths default to ON. Set them to OFF only with a reader
+# The recovered v70 hm_reader binaries (build 20260710_d899773e, see
+# reader_components in EXTLIB_VERSION.json) lack
+# cpp_get_include_file_by_index (added upstream around extlib v76), so the
+# legacy include listing defaults to ON. Set it to OFF only with a reader
 # from extlib v76 or later.
 option(HM_READER_LEGACY_INCLUDE_API
        "Enumerate model includes through the legacy reader selection API" ON)
@@ -16,8 +17,11 @@ if(HM_READER_LEGACY_INCLUDE_API)
                 APPEND PROPERTY COMPILE_DEFINITIONS HM_READER_LEGACY_INCLUDE_API)
 endif()
 
+# Default OFF since the v70 readers export cpp_is_part_with_elements.
+# Enable when building against an older reader (e.g. the v60-era build
+# shipped in the v67-compat and v82-hybrid packages).
 option(HM_READER_LEGACY_PART_API
-       "Count elements in the selected part with the legacy reader API" ON)
+       "Count elements in the selected part with the legacy reader API" OFF)
 if(HM_READER_LEGACY_PART_API)
    set_property(SOURCE source/devtools/hm_reader/hm_is_part_with_elements.F90
                 APPEND PROPERTY COMPILE_DEFINITIONS HM_READER_LEGACY_PART_API)
@@ -257,10 +261,11 @@ endif (NOT CMAKE_BUILD_TYPE)
 
 
 
-# Default ON: the recovered Linux reader cannot generate structured ALE
-# meshes, and a Windows trial with the v70-era reader produced invalid node
-# coordinates (see reader_components in EXTLIB_VERSION.json). Set to OFF
-# only with a validated reader from extlib v76 or later.
+# Default ON: the v70 readers export cpp_sale_mesh_create, but a Windows
+# trial with this reader build produced invalid node coordinates and no QA
+# reference exists to validate the generated meshes (see reader_components
+# in EXTLIB_VERSION.json). Set to OFF only with a validated reader from
+# extlib v76 or later.
 option(HM_READER_NO_STRUCTURED_ALE
        "Reject /ALE/STRUCTURED_MESH when the input reader lacks its generator" ON)
 if(HM_READER_NO_STRUCTURED_ALE)
