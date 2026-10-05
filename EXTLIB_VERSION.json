@@ -40,25 +40,21 @@
     },
     "linuxa64": {
       "source": "community-archived official OpenRadioss_linuxa64.zip release package",
-      "original_package_sha256": "a6efa602dbbab7aa018bd93487ec6e6c3613f75d0c2bbcee2e53ee1fa44ad4bb",
-      "archived_at": "https://github.com/OpenCourant/extlib/releases/tag/upstream-linuxa64-20260320",
-      "original_release": "built 2026-03-20 (embedded commit 665fe639)",
-      "build_id": "20260219_f824c8de",
-      "effective_extlib_era": "~v45 (February 2026)",
-      "reader_sha256": "642ba9e56938c410424cc07f544f4c5dc06b8c14fc2c96b054ad232c0d89c8ad",
+      "original_package_sha256": "e4f4347498cbebaab90118fe61daafbb7d60fb6f3f54495cba61065ae41abe32",
+      "archived_at": "https://github.com/OpenCourant/extlib/releases/tag/upstream-latest-20260728-linuxa64",
+      "original_release": "latest-20260728",
+      "build_id": "20260710_d899773e",
+      "effective_extlib_era": "v70",
+      "reader_sha256": "286c074dcf3ee4beacf4e6c854d3715b20371db871998e42bc7fdd3622c51fa2",
       "apr_sha256": "36a13bb6a416b5c47247aee49f1d820e0353511c095132970688c6bba6355902",
       "notices": "extlib/hm_reader/linuxa64/notices",
       "missing_symbols": [
-        "cpp_is_part_with_elements",
-        "cpp_sale_mesh_create",
-        "cpp_get_include_file_by_index",
-        "cpp_create_rbodies_from_rigid_parts",
-        "cpp_evaluate_rbodies_number_from_rigid_parts"
+        "cpp_get_include_file_by_index"
       ],
       "unsupported_keywords": [
         "/ALE/STRUCTURED_MESH"
       ],
-      "notes": "builds require HM_READER_LEGACY_PART_API and HM_READER_NO_RBODIES_FROM_RIGID_PARTS (arch-default ON for linuxa64)"
+      "structured_ale_note": "cpp_sale_mesh_create is exported by this reader but remains disabled: no QA reference exists and a win64 trial with the same build produced invalid node coordinates"
     },
     "win64": {
       "source": "https://github.com/OpenRadioss/OpenRadioss/releases/tag/latest-20260728",
@@ -77,8 +73,8 @@
       ]
     }
   },
-  "package_tag": "v82-hybrid-r3",
-  "package_date": "2026-10-05",
-  "url": "https://github.com/OpenCourant/extlib/releases/download/v82-hybrid-r3/extlib.zip",
-  "sha256": "0e47d6704793bcd53aa45ddac2bdb8c6b8b846230f8492c85565460181d83469"
+  "package_tag": "v82-hybrid-r4",
+  "package_date": "2026-10-06",
+  "url": "https://github.com/OpenCourant/extlib/releases/download/v82-hybrid-r4/extlib.zip",
+  "sha256": "793dd685ee32019c83e8591d23ed0102d8256a89169c257ad28f62f3d9d3e984"
 }
