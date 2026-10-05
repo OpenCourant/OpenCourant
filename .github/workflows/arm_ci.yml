@@ -1,0 +1,199 @@
+name: ARM CI
+
+# Dispatchable linuxa64 (aarch64) build + QA pipeline, used for iterating
+# on ARM support. Builds run natively on ubuntu-24.04-arm runners inside
+# ghcr.io/opencourant/linuxa64-bld-qa (same environment as the x86 image,
+# built for aarch64 from OpenCourant/ci-images).
+#
+# The linuxa64 hm_reader is a February 2026 build (the only one that
+# survived upstream's deletion) and lacks several APIs; linuxa64 builds
+# enable the compatibility fallbacks by arch default (see
+# starter/CMakeLists.txt and EXTLIB_VERSION.json reader_components).
+# Once stable this moves into PR Merge CI MAIN and the delivery pipeline.
+
+on:
+  workflow_dispatch:
+
+env:
+  QA_TIMEOUT_PER_TEST_LINUX: 150
+
+jobs:
+
+  build_linuxa64:
+    if: ${{ github.repository_owner == 'OpenCourant' }}
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: "ghcr.io/opencourant/linuxa64-bld-qa:ompi4.1.2"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+
+    env:
+      BUILD_NB_THREAD: 4
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - build: starter_linuxa64_gf
+            precision: dp
+            binary: starter
+
+          - build: starter_linuxa64_gf_sp
+            precision: sp
+            binary: starter
+
+          - build: engine_linuxa64_gf_ompi
+            precision: dp
+            binary: engine
+            mpi: ompi
+
+          - build: engine_linuxa64_gf_ompi_sp
+            precision: sp
+            binary: engine
+            mpi: ompi
+
+          - build: engine_linuxa64_gf
+            precision: dp
+            binary: engine
+
+          - build: engine_linuxa64_gf_sp
+            precision: sp
+            binary: engine
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+
+      - name: Running build
+        run: |
+          mpi_opts=''
+          if [ ! -z ${{ matrix.mpi }} ]
+          then
+            mpi_opts="-mpi=${{ matrix.mpi }}"
+          fi
+
+          cmd="./build_script.sh -release -arch=linuxa64_gf -prec=${{ matrix.precision }} -nt=${{ env.BUILD_NB_THREAD }} -static-link $mpi_opts"
+          echo "========================================="
+          echo "--  BUILD ${{ matrix.build }} --"
+          echo "--  $cmd --"
+          echo "========================================="
+          source /root/.bashrc
+          chmod 755 Compiling_tools/script/*
+          chmod 755 ${{ matrix.binary }}/build_script.sh
+
+          mkdir exec
+          cd ${{ matrix.binary }}
+          eval $cmd
+          cd ..
+
+          md5sum exec/* || exit 1
+
+      - name: Upload built artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: bins-linuxa64-${{ matrix.precision }}-${{ matrix.build }}
+          path: exec
+
+      # We upload extlib only once, arbitrary choice
+      - name: Upload extlib artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: extlib-linuxa64.zip
+          path: extlib.zip
+        if: ${{ matrix.build == 'starter_linuxa64_gf' }}
+
+  qa_linuxa64:
+    needs: build_linuxa64
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: "ghcr.io/opencourant/linuxa64-bld-qa:ompi4.1.2"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+
+    env:
+      hm_reader_extlib: ../../extlib/hm_reader
+      hm_reader_cfgfiles: ../../hm_cfg_files
+      homeuser: /root
+      mpi: ompi
+      QA_NB_PROC: 2
+      QA_NB_THREAD: 2
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linuxa64]
+        precision: [dp]
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+
+      - name: Clean local exe dir
+        run: |
+          rm -rf exec
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: bins-${{ matrix.os }}-${{ matrix.precision }}-starter_linuxa64_gf
+          path: exec
+          merge-multiple: true
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: bins-${{ matrix.os }}-${{ matrix.precision }}-engine_linuxa64_gf_ompi
+          path: exec
+          merge-multiple: true
+      - name: Download extlib artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: extlib-linuxa64.zip
+
+      - name: Unzip extlib
+        run: |
+          unzip extlib.zip
+
+      - name: Running qa
+        run: |
+          md5sum exec/* || echo "Nothing in exec/"
+          if [ "${{ matrix.precision }}" = "dp" ]
+          then
+            precision_ext=""
+          else
+            precision_ext="_${{ matrix.precision }}"
+          fi
+
+          chmod 755 exec/*
+          cd qa-tests/scripts
+          rm -f QA.summary
+          chmod 755 or_qa_script or_radioss.pl
+
+          # Allow root to execute mpi command (we are in docker container as root)
+          export OMPI_ALLOW_RUN_AS_ROOT=1
+          export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+          source ${{ env.homeuser }}/.bashrc
+          export LD_LIBRARY_PATH=${{ env.hm_reader_extlib }}/${{ matrix.os }}:$LD_LIBRARY_PATH
+
+          cmd="./or_qa_script ../../exec/engine_${{ matrix.os }}_gf_${{ env.mpi }}${precision_ext} 1.0 --env:RAD_CFG_PATH=${{ env.hm_reader_cfgfiles }} --system_run --env:OMP_STACKSIZE=400m --exec_script_args='mpiexec -np ${{ env.QA_NB_PROC }}' --env:OMP_NUM_THREADS=${{ env.QA_NB_THREAD }} --output_failures_stdout --xtra_args='--timeoutscript=${{ env.QA_TIMEOUT_PER_TEST_LINUX }}' "
+          echo "========================================="
+          echo "--  QA ${{ matrix.os }}_${{ matrix.precision }} --"
+          echo "--  $cmd --"
+          echo "========================================="
+          eval $cmd
+          res=$?
+
+          nbtestsfailed=$(grep "# Runs Failed\s*:" QA.summary | tail -n 1 | awk -F' ' '{print $5}')
+          nbtestsok=$(grep "# Runs Successful\s*:" QA.summary | tail -n 1 | awk -F' ' '{print $5}')
+
+          if [ $res -gt 0 ] || [ $nbtestsfailed -gt 0 ] || [ $nbtestsok = 0 ]
+          then
+            echo "All tests are not OK, CI is failed"
+            exit 1
+          fi
