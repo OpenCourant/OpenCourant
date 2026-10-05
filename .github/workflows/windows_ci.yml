@@ -103,3 +103,66 @@ jobs:
         with:
           name: bins-win64-${{ matrix.precision }}-${{ matrix.build }}
           path: exec
+
+  qa_windows:
+    needs: build_windows
+    runs-on: windows-2022
+
+    env:
+      QA_TIMEOUT_PER_TEST_WIN: 500
+      QA_NB_THREAD: 2
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+
+      - name: Restore Intel oneAPI cache
+        id: oneapi-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: 'C:\Program Files (x86)\Intel\oneAPI'
+          key: ${{ env.ONEAPI_CACHE_KEY }}
+          fail-on-cache-miss: true
+
+      - name: Download starter artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: bins-win64-dp-starter_win64
+          path: exec
+          merge-multiple: true
+      - name: Download engine artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: bins-win64-dp-engine_win64
+          path: exec
+          merge-multiple: true
+
+      - name: Download extlib
+        shell: cmd
+        run: |
+          python Compiling_tools\script\load_extlib.py
+          if errorlevel 1 exit /b 1
+
+      - name: Running qa
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat"
+          call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat"
+          set PATH=%GITHUB_WORKSPACE%\extlib\hm_reader\win64;%GITHUB_WORKSPACE%\extlib\h3d\lib\win64;%PATH%
+          set RAD_CFG_PATH=%GITHUB_WORKSPACE%\hm_cfg_files
+          set KMP_STACKSIZE=400m
+          set OMP_NUM_THREADS=%QA_NB_THREAD%
+          dir exec
+          cd qa-tests\scripts
+          if exist QA.summary del QA.summary
+          perl or_qa_script ..\..\exec\engine_win64.exe 1.0 --env:RAD_CFG_PATH=%RAD_CFG_PATH% --system_run --env:KMP_STACKSIZE=400m --env:OMP_NUM_THREADS=%QA_NB_THREAD% --output_failures_stdout --xtra_args="--timeoutscript=%QA_TIMEOUT_PER_TEST_WIN%"
+          set QA_RES=%ERRORLEVEL%
+          findstr /C:"# Runs" QA.summary
+          for /f "tokens=5" %%A in ('findstr /C:"# Runs Failed" QA.summary') do set NBFAILED=%%A
+          for /f "tokens=5" %%A in ('findstr /C:"# Runs Successful" QA.summary') do set NBOK=%%A
+          if not "%QA_RES%"=="0" ( echo QA script failed & exit /b 1 )
+          if not "%NBFAILED%"=="0" ( echo Tests failed & exit /b 1 )
+          if "%NBOK%"=="0" ( echo No test ran & exit /b 1 )
