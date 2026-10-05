@@ -57,7 +57,14 @@
 ! ----------------------------------------------------------------------------------------------------------------------
 !                                                   Body
 ! ----------------------------------------------------------------------------------------------------------------------
+#ifdef HM_READER_NO_RBODIES_FROM_RIGID_PARTS
+          ! This compatibility reader lacks cpp_evaluate_rbodies_number_from_rigid_parts;
+          ! /PART Irigid to /RBODY conversion is unavailable and counts are forced to zero.
+          write(*,'(A)') ' WARNING: /PART Irigid RBODY conversion is not supported by this input reader'
+          NBRBODIES_PER_PART(1:NPART) = 0
+#else
           call cpp_evaluate_rbodies_number_from_rigid_parts(NBRBODIES_PER_PART)
+#endif
 ! ----------------------------------------------------------------------------------------------------------------------
         end subroutine hm_evaluate_rbodies_from_rigid_parts
       end module hm_evaluate_rbodies_from_rigid_parts_mod

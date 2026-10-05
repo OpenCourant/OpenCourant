@@ -13,6 +13,8 @@
     "boost/boost_1_70_0/boost/filesystem.hpp",
     "hm_reader/linux64/libhm_reader_linux64.so",
     "hm_reader/linux64/libapr-1.so.0",
+    "hm_reader/linuxa64/libhm_reader_linuxa64.so",
+    "hm_reader/linuxa64/libapr-1.so.0",
     "hm_reader/win64/hm_reader_win64.dll",
     "hm_reader/win64/hm_reader_win64.lib"
   ],
@@ -36,6 +38,28 @@
       ],
       "structured_ale_note": "cpp_sale_mesh_create is exported by this reader but remains disabled: no QA reference exists and a win64 trial with the same build produced invalid node coordinates"
     },
+    "linuxa64": {
+      "source": "community-archived official OpenRadioss_linuxa64.zip release package",
+      "original_package_sha256": "a6efa602dbbab7aa018bd93487ec6e6c3613f75d0c2bbcee2e53ee1fa44ad4bb",
+      "archived_at": "https://github.com/OpenCourant/extlib/releases/tag/upstream-linuxa64-20260320",
+      "original_release": "built 2026-03-20 (embedded commit 665fe639)",
+      "build_id": "20260219_f824c8de",
+      "effective_extlib_era": "~v45 (February 2026)",
+      "reader_sha256": "642ba9e56938c410424cc07f544f4c5dc06b8c14fc2c96b054ad232c0d89c8ad",
+      "apr_sha256": "36a13bb6a416b5c47247aee49f1d820e0353511c095132970688c6bba6355902",
+      "notices": "extlib/hm_reader/linuxa64/notices",
+      "missing_symbols": [
+        "cpp_is_part_with_elements",
+        "cpp_sale_mesh_create",
+        "cpp_get_include_file_by_index",
+        "cpp_create_rbodies_from_rigid_parts",
+        "cpp_evaluate_rbodies_number_from_rigid_parts"
+      ],
+      "unsupported_keywords": [
+        "/ALE/STRUCTURED_MESH"
+      ],
+      "notes": "builds require HM_READER_LEGACY_PART_API and HM_READER_NO_RBODIES_FROM_RIGID_PARTS (arch-default ON for linuxa64)"
+    },
     "win64": {
       "source": "https://github.com/OpenRadioss/OpenRadioss/releases/tag/latest-20260728",
       "archive": "OpenRadioss_win64.zip",
@@ -53,8 +77,8 @@
       ]
     }
   },
-  "package_tag": "v82-hybrid-r2",
+  "package_tag": "v82-hybrid-r3",
   "package_date": "2026-10-05",
-  "url": "https://github.com/OpenCourant/extlib/releases/download/v82-hybrid-r2/extlib.zip",
-  "sha256": "76be37f899b6740b1b10f49c17320ffb24ee1df60f32b097c65fe0270fafd17e"
+  "url": "https://github.com/OpenCourant/extlib/releases/download/v82-hybrid-r3/extlib.zip",
+  "sha256": "0e47d6704793bcd53aa45ddac2bdb8c6b8b846230f8492c85565460181d83469"
 }
