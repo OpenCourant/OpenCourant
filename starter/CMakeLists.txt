@@ -17,14 +17,32 @@ if(HM_READER_LEGACY_INCLUDE_API)
                 APPEND PROPERTY COMPILE_DEFINITIONS HM_READER_LEGACY_INCLUDE_API)
 endif()
 
-# Default OFF since the v70 readers export cpp_is_part_with_elements.
-# Enable when building against an older reader (e.g. the v60-era build
-# shipped in the v67-compat and v82-hybrid packages).
+# Per-architecture compatibility defaults. The linux64/win64 v70 readers
+# (build 20260710_d899773e) export cpp_is_part_with_elements and the
+# rigid-part APIs; the only surviving linuxa64 reader (Feb 2026 build
+# 20260219_f824c8de) does not, so ARM builds enable the fallbacks by
+# default (see reader_components in EXTLIB_VERSION.json).
+set (hm_reader_legacy_part_default OFF)
+set (hm_reader_no_rbodies_default OFF)
+if(arch MATCHES "^linuxa64")
+   set (hm_reader_legacy_part_default ON)
+   set (hm_reader_no_rbodies_default ON)
+endif()
+
 option(HM_READER_LEGACY_PART_API
-       "Count elements in the selected part with the legacy reader API" OFF)
+       "Count elements in the selected part with the legacy reader API" ${hm_reader_legacy_part_default})
 if(HM_READER_LEGACY_PART_API)
    set_property(SOURCE source/devtools/hm_reader/hm_is_part_with_elements.F90
                 APPEND PROPERTY COMPILE_DEFINITIONS HM_READER_LEGACY_PART_API)
+endif()
+
+option(HM_READER_NO_RBODIES_FROM_RIGID_PARTS
+       "Disable /PART Irigid RBODY conversion when the reader lacks the rigid-part APIs" ${hm_reader_no_rbodies_default})
+if(HM_READER_NO_RBODIES_FROM_RIGID_PARTS)
+   set_property(SOURCE source/devtools/hm_reader/hm_create_rbodies_from_rigid_parts.F90
+                       source/devtools/hm_reader/hm_evaluate_rbodies_from_rigid_parts.F90
+                APPEND PROPERTY COMPILE_DEFINITIONS HM_READER_NO_RBODIES_FROM_RIGID_PARTS)
+   message(WARNING "This reader compatibility build does not support /PART Irigid RBODY conversion")
 endif()
 
 # Verbose

@@ -58,7 +58,19 @@
 ! ----------------------------------------------------------------------------------------------------------------------
 !                                                   Body
 ! ----------------------------------------------------------------------------------------------------------------------
+#ifdef HM_READER_NO_RBODIES_FROM_RIGID_PARTS
+          ! Unreachable while hm_evaluate_rbodies_from_rigid_parts forces the
+          ! counts to zero; kept as a guard should a caller bypass that path.
+          if (NB_NEWRBODIES > 0) then
+            write(*,'(A)') 'ERROR: /PART Irigid requires a newer input reader.'
+            write(*,'(A)') 'This compatibility build cannot create RBODIES from rigid parts.'
+            call arret(2)
+          endif
+          NEW_RBODY_TO_PART(1:NB_NEWRBODIES) = 0
+          NEW_RBODY_ID(1:NB_NEWRBODIES) = 0
+#else
           call cpp_create_rbodies_from_rigid_parts(NEW_RBODY_TO_PART,NEW_RBODY_ID)
+#endif
 ! ----------------------------------------------------------------------------------------------------------------------
         end subroutine hm_create_rbodies_from_rigid_parts
       end module hm_create_rbodies_from_rigid_parts_mod
