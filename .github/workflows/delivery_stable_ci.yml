@@ -766,7 +766,7 @@ jobs:
             echo "- \`/ALE/STRUCTURED_MESH\` is not supported by the recovered input readers and is rejected explicitly"
             echo "- A Linux arm64 package is not available yet"
             echo ""
-            echo "Thank you for using OpenCourant! 👉 [Share your feedback in GitHub Discussions](https://github.com/${{ github.repository }}/discussions)"
+            echo "Thank you for using OpenCourant! 👉 [Share your feedback on the OpenCourant forum](https://github.com/orgs/${{ github.repository_owner }}/discussions)"
           } > release_body.md
 
           # Re-deliveries replace the existing release on the same tag
