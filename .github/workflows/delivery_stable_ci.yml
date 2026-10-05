@@ -56,7 +56,15 @@ jobs:
             TAG="latest-$(date -u +%Y%m%d)"
             if gh api "repos/${{ github.repository }}/git/ref/tags/$TAG" > /dev/null 2>&1
             then
-              echo "Tag $TAG already exists, delivering it again"
+              EXISTING=$(gh api "repos/${{ github.repository }}/commits/$TAG" --jq .sha)
+              if [ "$EXISTING" = "${{ github.sha }}" ]
+              then
+                echo "Tag $TAG already exists on the current commit, delivering it again"
+              else
+                echo "Tag $TAG exists on $EXISTING, moving it to the current commit ${{ github.sha }}"
+                gh api -X PATCH "repos/${{ github.repository }}/git/refs/tags/$TAG" \
+                  -f sha="${{ github.sha }}" -F force=true
+              fi
             else
               echo "Creating tag $TAG on ${{ github.sha }}"
               gh api -X POST "repos/${{ github.repository }}/git/refs" \
@@ -345,7 +353,7 @@ jobs:
           ref: ${{ needs.set_tag.outputs.tag }}
 
       - name: Set up Intel oneAPI
-        uses: ./.github/actions/setup-oneapi-win
+        uses: OpenCourant/OpenCourant/.github/actions/setup-oneapi-win@main
 
       - name: Running build
         shell: cmd
@@ -386,7 +394,7 @@ jobs:
           lfs: 'true'
 
       - name: Set up Intel oneAPI
-        uses: ./.github/actions/setup-oneapi-win
+        uses: OpenCourant/OpenCourant/.github/actions/setup-oneapi-win@main
 
       - name: Build output converters
         shell: cmd
@@ -451,7 +459,7 @@ jobs:
           ref: ${{ needs.set_tag.outputs.tag }}
 
       - name: Set up Intel oneAPI
-        uses: ./.github/actions/setup-oneapi-win
+        uses: OpenCourant/OpenCourant/.github/actions/setup-oneapi-win@main
 
       - name: Download starter artifacts
         uses: actions/download-artifact@v8
