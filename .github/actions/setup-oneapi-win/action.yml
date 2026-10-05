@@ -1,0 +1,59 @@
+name: Set up Intel oneAPI on Windows
+description: >
+  Installs (or restores from cache) the Intel oneAPI components needed to
+  build OpenCourant on Windows: ifx + icx from the HPC Kit and MKL from the
+  Base Kit. Versions match the toolchain upstream OpenRadioss used
+  (compiler 2025.0, MKL 2025.0).
+
+inputs:
+  hpckit-url:
+    description: Intel oneAPI HPC Kit offline installer URL
+    default: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/a37c30c3-a846-4371-a85d-603e9a9eb94c/intel-oneapi-hpc-toolkit-2025.0.1.48_offline.exe
+  basekit-url:
+    description: Intel oneAPI Base Kit offline installer URL
+    default: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/ae29263e-38b9-4d43-86c3-376d6e0668e7/intel-oneapi-base-toolkit-2025.0.1.47_offline.exe
+  hpckit-components:
+    description: HPC Kit components to install
+    default: intel.oneapi.win.ifort-compiler:intel.oneapi.win.cpp-dpcpp-common
+  basekit-components:
+    description: Base Kit components to install
+    default: intel.oneapi.win.mkl.devel
+  cache-key:
+    description: Cache key for the oneAPI installation
+    default: oneapi-win-1-compiler2025.0.1-mkl2025.0.1
+
+runs:
+  using: composite
+  steps:
+
+    - name: Restore Intel oneAPI cache
+      id: oneapi-cache
+      uses: actions/cache@v4
+      with:
+        path: 'C:\Program Files (x86)\Intel\oneAPI'
+        key: ${{ inputs.cache-key }}
+
+    - name: Install Intel oneAPI (ifx, icx, MKL)
+      if: steps.oneapi-cache.outputs.cache-hit != 'true'
+      shell: cmd
+      env:
+        HPCKIT_URL: ${{ inputs.hpckit-url }}
+        BASEKIT_URL: ${{ inputs.basekit-url }}
+        HPCKIT_COMPONENTS: ${{ inputs.hpckit-components }}
+        BASEKIT_COMPONENTS: ${{ inputs.basekit-components }}
+      run: |
+        echo === Installing HPC Kit components: %HPCKIT_COMPONENTS%
+        curl.exe -s --output %TEMP%\hpckit.exe --url %HPCKIT_URL% --retry 5 --retry-delay 5
+        start /b /wait %TEMP%\hpckit.exe -s -x -f hpckit_extracted --log hpckit_extract.log
+        hpckit_extracted\bootstrapper.exe -s --action install --components=%HPCKIT_COMPONENTS% --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=.
+        if errorlevel 1 exit /b 1
+        rd /s/q hpckit_extracted
+        del %TEMP%\hpckit.exe
+
+        echo === Installing Base Kit components: %BASEKIT_COMPONENTS%
+        curl.exe -s --output %TEMP%\basekit.exe --url %BASEKIT_URL% --retry 5 --retry-delay 5
+        start /b /wait %TEMP%\basekit.exe -s -x -f basekit_extracted --log basekit_extract.log
+        basekit_extracted\bootstrapper.exe -s --action install --components=%BASEKIT_COMPONENTS% --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=.
+        if errorlevel 1 exit /b 1
+        rd /s/q basekit_extracted
+        del %TEMP%\basekit.exe

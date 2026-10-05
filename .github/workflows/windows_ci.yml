@@ -1,35 +1,28 @@
 name: Windows CI
 
-# Experimental Windows build pipeline on GitHub-hosted runners.
-# Restores the win64 builds that upstream ran on self-hosted runners with a
-# preinstalled Intel toolchain. The toolchain versions match upstream
-# (compiler 2025.0, MKL 2025.0); Intel oneAPI 2025.0.1 is installed from
-# Intel's offline installers and cached.
+# Dispatchable Windows build + QA pipeline, used for iterating on the
+# Windows toolchain without touching the post-merge CI. The same jobs run
+# in PR Merge CI MAIN (matching upstream, which ran Windows builds
+# post-merge only, never on PRs).
+#
+# Toolchain: Intel oneAPI 2025.0.1 (ifx/icx + MKL), matching the 2025.0
+# toolchain upstream used, installed via .github/actions/setup-oneapi-win.
+# Runner: windows-2022 — the VS2026 STL on windows-latest requires
+# Clang 20+, while icx 2025.0 is Clang 19-based (error STL1000).
 #
 # Scope: SMP variants only. The engine_win64_impi* variants (Intel MPI
 # 2021.10) are deferred.
-#
-# Once stable this moves into PR Merge CI MAIN (matching upstream, which
-# ran Windows builds post-merge only, never on PRs).
 
 on:
   workflow_dispatch:
 
 env:
-  WINDOWS_HPCKIT_URL: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/a37c30c3-a846-4371-a85d-603e9a9eb94c/intel-oneapi-hpc-toolkit-2025.0.1.48_offline.exe
-  WINDOWS_BASEKIT_URL: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/ae29263e-38b9-4d43-86c3-376d6e0668e7/intel-oneapi-base-toolkit-2025.0.1.47_offline.exe
-  HPCKIT_COMPONENTS: intel.oneapi.win.ifort-compiler:intel.oneapi.win.cpp-dpcpp-common
-  BASEKIT_COMPONENTS: intel.oneapi.win.mkl.devel
-  ONEAPI_CACHE_KEY: oneapi-win-1-compiler2025.0.1-mkl2025.0.1
   BUILD_NB_THREAD: 4
 
 jobs:
 
   build_windows:
     if: ${{ github.repository_owner == 'OpenCourant' }}
-    # windows-2022 (VS2022 / MSVC 14.4x): the VS2026 STL on windows-latest
-    # requires Clang 20+, while icx 2025.0 is Clang 19-based (error STL1000).
-    # Revisit when the toolchain moves to a newer oneAPI.
     runs-on: windows-2022
 
     strategy:
@@ -40,8 +33,16 @@ jobs:
             precision: dp
             binary: starter
 
+          - build: starter_win64_sp
+            precision: sp
+            binary: starter
+
           - build: engine_win64
             precision: dp
+            binary: engine
+
+          - build: engine_win64_sp
+            precision: sp
             binary: engine
 
     steps:
@@ -51,32 +52,8 @@ jobs:
         with:
           lfs: 'false'
 
-      - name: Restore Intel oneAPI cache
-        id: oneapi-cache
-        uses: actions/cache@v4
-        with:
-          path: 'C:\Program Files (x86)\Intel\oneAPI'
-          key: ${{ env.ONEAPI_CACHE_KEY }}
-
-      - name: Install Intel oneAPI (ifx, icx, MKL)
-        if: steps.oneapi-cache.outputs.cache-hit != 'true'
-        shell: cmd
-        run: |
-          echo === Installing HPC Kit components: %HPCKIT_COMPONENTS%
-          curl.exe -s --output %TEMP%\hpckit.exe --url %WINDOWS_HPCKIT_URL% --retry 5 --retry-delay 5
-          start /b /wait %TEMP%\hpckit.exe -s -x -f hpckit_extracted --log hpckit_extract.log
-          hpckit_extracted\bootstrapper.exe -s --action install --components=%HPCKIT_COMPONENTS% --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=.
-          if errorlevel 1 exit /b 1
-          rd /s/q hpckit_extracted
-          del %TEMP%\hpckit.exe
-
-          echo === Installing Base Kit components: %BASEKIT_COMPONENTS%
-          curl.exe -s --output %TEMP%\basekit.exe --url %WINDOWS_BASEKIT_URL% --retry 5 --retry-delay 5
-          start /b /wait %TEMP%\basekit.exe -s -x -f basekit_extracted --log basekit_extract.log
-          basekit_extracted\bootstrapper.exe -s --action install --components=%BASEKIT_COMPONENTS% --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=.
-          if errorlevel 1 exit /b 1
-          rd /s/q basekit_extracted
-          del %TEMP%\basekit.exe
+      - name: Set up Intel oneAPI
+        uses: ./.github/actions/setup-oneapi-win
 
       - name: Running build
         shell: cmd
@@ -84,10 +61,6 @@ jobs:
           for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvars64.bat"
           call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat"
           call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat"
-          where ifx && ifx --version
-          where icx
-          cmake --version
-          ninja --version
           echo =========================================
           echo --  BUILD ${{ matrix.build }} --
           echo =========================================
@@ -119,13 +92,8 @@ jobs:
         with:
           lfs: 'false'
 
-      - name: Restore Intel oneAPI cache
-        id: oneapi-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: 'C:\Program Files (x86)\Intel\oneAPI'
-          key: ${{ env.ONEAPI_CACHE_KEY }}
-          fail-on-cache-miss: true
+      - name: Set up Intel oneAPI
+        uses: ./.github/actions/setup-oneapi-win
 
       - name: Download starter artifacts
         uses: actions/download-artifact@v8
