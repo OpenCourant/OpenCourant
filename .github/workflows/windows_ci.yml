@@ -146,23 +146,38 @@ jobs:
           python Compiling_tools\script\load_extlib.py
           if errorlevel 1 exit /b 1
 
-      - name: Running qa
+      # The QA perl scripts need Cygwin (native Windows perl lacks getppid);
+      # upstream ran them from Cygwin on its self-hosted runners too.
+      - name: Install Cygwin with perl
         shell: cmd
         run: |
-          call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat"
-          call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat"
-          set PATH=%GITHUB_WORKSPACE%\extlib\hm_reader\win64;%GITHUB_WORKSPACE%\extlib\h3d\lib\win64;%PATH%
-          set RAD_CFG_PATH=%GITHUB_WORKSPACE%\hm_cfg_files
-          set KMP_STACKSIZE=400m
-          set OMP_NUM_THREADS=%QA_NB_THREAD%
-          dir exec
-          cd qa-tests\scripts
-          if exist QA.summary del QA.summary
-          perl or_qa_script ..\..\exec\engine_win64.exe 1.0 --env:RAD_CFG_PATH=%RAD_CFG_PATH% --system_run --env:KMP_STACKSIZE=400m --env:OMP_NUM_THREADS=%QA_NB_THREAD% --output_failures_stdout --xtra_args="--timeoutscript=%QA_TIMEOUT_PER_TEST_WIN%"
-          set QA_RES=%ERRORLEVEL%
-          findstr /C:"# Runs" QA.summary
-          for /f "tokens=5" %%A in ('findstr /C:"# Runs Failed" QA.summary') do set NBFAILED=%%A
-          for /f "tokens=5" %%A in ('findstr /C:"# Runs Successful" QA.summary') do set NBOK=%%A
-          if not "%QA_RES%"=="0" ( echo QA script failed & exit /b 1 )
-          if not "%NBFAILED%"=="0" ( echo Tests failed & exit /b 1 )
-          if "%NBOK%"=="0" ( echo No test ran & exit /b 1 )
+          curl.exe -s --output %TEMP%\cygsetup.exe --url https://www.cygwin.com/setup-x86_64.exe --retry 5 --retry-delay 5
+          %TEMP%\cygsetup.exe -q -R C:\cygwin64 -s https://mirrors.kernel.org/sourceware/cygwin/ -P perl -l %TEMP%\cygpkgs
+          C:\cygwin64\bin\bash --login -c "perl --version | head -2"
+
+      # Running cygwin from cmd => neither indentation nor comment inside the
+      # bash -c string (same constraint as the inherited OpenRadioss CI)
+      - name: Running qa
+        shell: cmd
+        run: >
+          call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat" &&
+          call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat" &&
+          C:\cygwin64\bin\bash --login -c "
+          cd %cd:\=/%;
+          chmod -R 755 extlib/* exec/* 2>/dev/null;
+          cd qa-tests/scripts;
+          rm -f QA.summary;
+          chmod 755 or_qa_script or_radioss.pl;
+          export PATH=../../extlib/hm_reader/win64:../../extlib/h3d/lib/win64:$PATH;
+          cmd=\"./or_qa_script ../../exec/engine_win64.exe 1.0 --env:RAD_CFG_PATH=../../hm_cfg_files --system_run --env:KMP_STACKSIZE=400m --env:OMP_NUM_THREADS=%QA_NB_THREAD% --output_failures_stdout --xtra_args='--timeoutscript=%QA_TIMEOUT_PER_TEST_WIN%' \";
+          echo \"--  $cmd --\";
+          eval $cmd;
+          res=$?;
+          nbtestsfailed=$(grep \"# Runs Failed\s*:\" QA.summary | tail -n 1 | awk -F' ' '{print $5}');
+          nbtestsok=$(grep \"# Runs Successful\s*:\" QA.summary | tail -n 1 | awk -F' ' '{print $5}');
+          if [ $res -gt 0 ] || [ $nbtestsfailed -gt 0 ] || [ $nbtestsok = 0 ];
+          then
+          echo \"All tests are not OK, CI is failed\";
+          exit 1;
+          fi;
+          "
