@@ -45,6 +45,16 @@ jobs:
             precision: sp
             binary: engine
 
+          - build: engine_win64_impi
+            precision: dp
+            binary: engine
+            mpi: impi
+
+          - build: engine_win64_impi_sp
+            precision: sp
+            binary: engine
+            mpi: impi
+
     steps:
 
       - name: Checkout git sources
@@ -61,11 +71,14 @@ jobs:
           for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvars64.bat"
           call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat"
           call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat"
+          call "C:\Program Files (x86)\Intel\oneAPI\mpi\latest\env\vars.bat"
+          set mpi_opts=
+          if not "${{ matrix.mpi }}"=="" set mpi_opts=-mpi=${{ matrix.mpi }}
           echo =========================================
           echo --  BUILD ${{ matrix.build }} --
           echo =========================================
           cd ${{ matrix.binary }}
-          call build_windows.bat -release -arch=win64 -prec=${{ matrix.precision }} -nt=%BUILD_NB_THREAD%
+          call build_windows.bat -release -arch=win64 -prec=${{ matrix.precision }} -nt=%BUILD_NB_THREAD% %mpi_opts%
           cd ..
           if not exist exec ( echo No exec directory & exit /b 1 )
           dir exec
@@ -104,7 +117,7 @@ jobs:
       - name: Download engine artifacts
         uses: actions/download-artifact@v8
         with:
-          name: bins-win64-dp-engine_win64
+          name: bins-win64-dp-engine_win64_impi
           path: exec
           merge-multiple: true
 
@@ -123,6 +136,13 @@ jobs:
           %TEMP%\cygsetup.exe -q -R C:\cygwin64 -s https://mirrors.kernel.org/sourceware/cygwin/ -P perl -l %TEMP%\cygpkgs
           C:\cygwin64\bin\bash --login -c "perl --version | head -2"
 
+      - name: Register the Intel MPI hydra service
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Intel\oneAPI\mpi\latest\env\vars.bat"
+          hydra_service.exe -install
+          sc query hydra_service | findstr STATE
+
       # Running cygwin from cmd => neither indentation nor comment inside the
       # bash -c string (same constraint as the inherited OpenRadioss CI)
       - name: Running qa
@@ -130,6 +150,7 @@ jobs:
         run: >
           call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat" &&
           call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat" &&
+          call "C:\Program Files (x86)\Intel\oneAPI\mpi\latest\env\vars.bat" &&
           C:\cygwin64\bin\bash --login -c "
           cd %cd:\=/%;
           chmod -R 755 extlib/* exec/* 2>/dev/null;
@@ -137,7 +158,7 @@ jobs:
           rm -f QA.summary;
           chmod 755 or_qa_script or_radioss.pl;
           export PATH=../../extlib/hm_reader/win64:../../extlib/h3d/lib/win64:$PATH;
-          cmd=\"./or_qa_script ../../exec/engine_win64.exe 1.0 --env:RAD_CFG_PATH=../../hm_cfg_files --system_run --env:KMP_STACKSIZE=400m --env:OMP_NUM_THREADS=%QA_NB_THREAD% --output_failures_stdout --xtra_args='--timeoutscript=%QA_TIMEOUT_PER_TEST_WIN%' \";
+          cmd=\"./or_qa_script ../../exec/engine_win64_impi.exe 1.0 --env:RAD_CFG_PATH=../../hm_cfg_files --system_run --env:KMP_STACKSIZE=400m --exec_script_args='mpiexec -np %QA_NB_PROC%' --env:OMP_NUM_THREADS=%QA_NB_THREAD% --output_failures_stdout --xtra_args='--timeoutscript=%QA_TIMEOUT_PER_TEST_WIN%' \";
           echo \"--  $cmd --\";
           eval $cmd;
           res=$?;
@@ -149,3 +170,35 @@ jobs:
           exit 1;
           fi;
           "
+
+      # Dry run of the runtime bundling planned for the delivery pipeline:
+      # enumerate the Intel MPI runtime, copy the curated subset out of the
+      # oneAPI tree, and prove it runs a model with mpiexec -localonly using
+      # only compiler/MKL vars (no MPI env).
+      - name: MPI runtime harvest dry run
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Intel\oneAPI\mpi\latest\env\vars.bat"
+          echo === I_MPI_ROOT=%I_MPI_ROOT%
+          dir "%I_MPI_ROOT%\bin"
+          dir "%I_MPI_ROOT%\opt\mpi\libfabric\bin" 2>nul || dir "%I_MPI_ROOT%\libfabric\bin" 2>nul
+          mkdir %TEMP%\mpirt
+          for %%F in (impi.dll mpiexec.exe hydra_service.exe hydra_bstrap_proxy.exe hydra_pmi_proxy.exe) do copy "%I_MPI_ROOT%\bin\%%F" %TEMP%\mpirt\ || exit /b 1
+          if exist "%I_MPI_ROOT%\opt\mpi\libfabric\bin" ( xcopy /y /e "%I_MPI_ROOT%\opt\mpi\libfabric\bin\*" %TEMP%\mpirt\ ) else ( xcopy /y /e "%I_MPI_ROOT%\libfabric\bin\*" %TEMP%\mpirt\ )
+          dir %TEMP%\mpirt
+
+      - name: MPI runtime subset run (no MPI env)
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat"
+          call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat"
+          set PATH=%TEMP%\mpirt;%CD%\extlib\hm_reader\win64;%CD%\extlib\h3d\lib\win64;%PATH%
+          set RAD_CFG_PATH=%CD%\hm_cfg_files
+          set KMP_STACKSIZE=400m
+          set OMP_NUM_THREADS=2
+          cd qa-tests\miniqa\ACCELEROMETRES\data
+          "%GITHUB_WORKSPACE%\exec\starter_win64.exe" -i ACCELERO_0000.rad -np 2 > s.out 2>&1
+          if errorlevel 1 ( type s.out & exit /b 1 )
+          %TEMP%\mpirt\mpiexec.exe -localonly -np 2 "%GITHUB_WORKSPACE%\exec\engine_win64_impi.exe" -i ACCELERO_0001.rad > e.out 2>&1
+          if errorlevel 1 ( type e.out & exit /b 1 )
+          findstr /C:"NORMAL TERMINATION" e.out
