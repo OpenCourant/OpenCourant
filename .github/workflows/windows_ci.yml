@@ -141,7 +141,6 @@ jobs:
         run: |
           call "C:\Program Files (x86)\Intel\oneAPI\mpi\latest\env\vars.bat"
           hydra_service.exe -install
-          sc query hydra_service | findstr STATE
 
       # Running cygwin from cmd => neither indentation nor comment inside the
       # bash -c string (same constraint as the inherited OpenRadioss CI)
