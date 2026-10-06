@@ -628,8 +628,344 @@ jobs:
           if errorlevel 1 ( type engine.out & echo ENGINE FAILED & exit /b 1 )
           findstr /C:"NORMAL TERMINATION" engine.out || ( type engine.out & exit /b 1 )
 
+  build_linuxa64:
+    needs: set_tag
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: "ghcr.io/opencourant/linuxa64-bld-qa:ompi4.1.2"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+
+    env:
+      BUILD_NB_THREAD: 4
+      RADIOSS_SHA_HEADER: ${{ needs.set_tag.outputs.sha }}
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - build: starter_linuxa64_gf
+            precision: dp
+            binary: starter
+
+          - build: starter_linuxa64_gf_sp
+            precision: sp
+            binary: starter
+
+          - build: engine_linuxa64_gf_ompi
+            precision: dp
+            binary: engine
+            mpi: ompi
+
+          - build: engine_linuxa64_gf_ompi_sp
+            precision: sp
+            binary: engine
+            mpi: ompi
+
+          - build: engine_linuxa64_gf
+            precision: dp
+            binary: engine
+
+          - build: engine_linuxa64_gf_sp
+            precision: sp
+            binary: engine
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+          ref: ${{ needs.set_tag.outputs.tag }}
+
+      - name: Running build
+        run: |
+          mpi_opts=''
+          if [ ! -z ${{ matrix.mpi }} ]
+          then
+            mpi_opts="-mpi=${{ matrix.mpi }}"
+          fi
+
+          cmd="./build_script.sh -release -arch=linuxa64_gf -prec=${{ matrix.precision }} -nt=${{ env.BUILD_NB_THREAD }} -static-link $mpi_opts"
+          echo "========================================="
+          echo "--  BUILD ${{ matrix.build }} --"
+          echo "--  $cmd --"
+          echo "========================================="
+          source /root/.bashrc
+          chmod 755 Compiling_tools/script/*
+          chmod 755 ${{ matrix.binary }}/build_script.sh
+
+          mkdir exec
+          cd ${{ matrix.binary }}
+          eval $cmd
+          cd ..
+
+          md5sum exec/* || exit 1
+
+      - name: Upload built artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: bins-linuxa64-${{ matrix.precision }}-${{ matrix.build }}
+          path: exec
+
+  # Converters built natively on ARM plus the aarch64 GCC runtime
+  # libraries that -static-link leaves dynamic.
+  build_tools_linuxa64:
+    needs: set_tag
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: "ghcr.io/opencourant/linuxa64-bld-qa:ompi4.1.2"
+
+    steps:
+      - name: Checkout Tools sources
+        uses: actions/checkout@v6
+        with:
+          repository: 'OpenCourant/Tools'
+          lfs: 'true'
+
+      - name: Build output converters
+        run: |
+          source /root/.bashrc
+          cd output_converters/anim_to_vtk/linuxa64
+          bash build.bash
+          cd ../../th_to_csv/linuxa64
+          bash build.bash
+          cd ../../..
+          md5sum exec/* || exit 1
+
+      - name: Collect GCC runtime libraries
+        run: |
+          mkdir -p gcc_runtime
+          cp -a /lib64/libgomp.so.1* /lib64/libquadmath.so.0* gcc_runtime/ 2>/dev/null || cp -a /lib64/libgomp.so.1* gcc_runtime/
+          ls -l gcc_runtime/
+
+      - name: Upload converter artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tools-linuxa64
+          path: exec
+
+      - name: Upload GCC runtime artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: gcc-runtime-linuxa64
+          path: gcc_runtime
+
+  qa_release_linuxa64:
+    needs: [set_tag, build_linuxa64]
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: "ghcr.io/opencourant/linuxa64-bld-qa:ompi4.1.2"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+
+    env:
+      hm_reader_extlib: ../../extlib/hm_reader
+      hm_reader_cfgfiles: ../../hm_cfg_files
+      homeuser: /root
+      mpi: ompi
+      QA_NB_PROC: 2
+      QA_NB_THREAD: 2
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linuxa64]
+        precision: [dp]
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+          ref: ${{ needs.set_tag.outputs.tag }}
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: bins-${{ matrix.os }}-${{ matrix.precision }}-starter_linuxa64_gf
+          path: exec
+          merge-multiple: true
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: bins-${{ matrix.os }}-${{ matrix.precision }}-engine_linuxa64_gf_ompi
+          path: exec
+          merge-multiple: true
+
+      - name: Download extlib
+        run: |
+          python3 Compiling_tools/script/load_extlib.py
+
+      - name: Running qa
+        run: |
+          md5sum exec/* || echo "Nothing in exec/"
+          if [ "${{ matrix.precision }}" = "dp" ]
+          then
+            precision_ext=""
+          else
+            precision_ext="_${{ matrix.precision }}"
+          fi
+
+          chmod 755 exec/*
+          cd qa-tests/scripts
+          rm -f QA.summary
+          chmod 755 or_qa_script or_radioss.pl
+
+          # Allow root to execute mpi command (we are in docker container as root)
+          export OMPI_ALLOW_RUN_AS_ROOT=1
+          export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+          source ${{ env.homeuser }}/.bashrc
+          export LD_LIBRARY_PATH=${{ env.hm_reader_extlib }}/${{ matrix.os }}:$LD_LIBRARY_PATH
+
+          cmd="./or_qa_script ../../exec/engine_${{ matrix.os }}_gf_${{ env.mpi }}${precision_ext} 1.0 --env:RAD_CFG_PATH=${{ env.hm_reader_cfgfiles }} --system_run --env:OMP_STACKSIZE=400m --exec_script_args='mpiexec -np ${{ env.QA_NB_PROC }}' --env:OMP_NUM_THREADS=${{ env.QA_NB_THREAD }} --output_failures_stdout --xtra_args='--timeoutscript=${{ env.QA_TIMEOUT_PER_TEST_LINUX }}' "
+          echo "========================================="
+          echo "--  QA ${{ matrix.os }}_${{ matrix.precision }} --"
+          echo "--  $cmd --"
+          echo "========================================="
+          eval $cmd
+          res=$?
+
+          nbtestsfailed=$(grep "# Runs Failed\s*:" QA.summary | tail -n 1 | awk -F' ' '{print $5}')
+          nbtestsok=$(grep "# Runs Successful\s*:" QA.summary | tail -n 1 | awk -F' ' '{print $5}')
+
+          if [ $res -gt 0 ] || [ $nbtestsfailed -gt 0 ] || [ $nbtestsok = 0 ]
+          then
+            echo "All tests are not OK, delivery is canceled"
+            exit 1
+          fi
+
+  package_linuxa64:
+    needs: [set_tag, build_linuxa64, build_tools_linuxa64]
+    runs-on: ubuntu-latest
+
+    env:
+      MAINDIR: 'OpenCourant'
+
+    steps:
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+          ref: ${{ needs.set_tag.outputs.tag }}
+
+      - name: Checkout Tools sources
+        uses: actions/checkout@v6
+        with:
+          repository: 'OpenCourant/Tools'
+          lfs: 'true'
+          path: 'TOOLS'
+
+      - name: Download linuxa64 artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: bins-linuxa64-*
+          path: exec_arm
+          merge-multiple: true
+      - name: Download converter artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: tools-linuxa64
+          path: exec_arm
+          merge-multiple: true
+      - name: Download GCC runtime artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: gcc-runtime-linuxa64
+          path: gcc_runtime_arm
+
+      - name: Download extlib
+        run: |
+          python3 Compiling_tools/script/load_extlib.py
+
+      - name: Assemble linuxa64 package
+        run: |
+          set -e
+          rm -rf todeliver
+          mkdir -p todeliver/${MAINDIR}/exec \
+                   todeliver/${MAINDIR}/extlib/h3d/lib/linuxa64 \
+                   todeliver/${MAINDIR}/extlib/hm_reader \
+                   todeliver/${MAINDIR}/licenses
+
+          cp -a exec_arm/* todeliver/${MAINDIR}/exec/
+          cp -a extlib/h3d/lib/linuxa64/* todeliver/${MAINDIR}/extlib/h3d/lib/linuxa64/
+          cp -a extlib/hm_reader/linuxa64 todeliver/${MAINDIR}/extlib/hm_reader/
+          cp -a gcc_runtime_arm/* todeliver/${MAINDIR}/extlib/hm_reader/linuxa64/
+          cp -a hm_cfg_files todeliver/${MAINDIR}/
+          cp -a extlib/license/* todeliver/${MAINDIR}/licenses/
+          cp -a TOOLS/openradioss_gui todeliver/${MAINDIR}/
+          cp -a TOOLS/input_converters/inp2rad/inp2rad/inp2rad.py todeliver/${MAINDIR}/openradioss_gui/
+          cp -a COPYRIGHT.md todeliver/${MAINDIR}/
+
+          cat > todeliver/${MAINDIR}/licenses/gcc_runtime_notice.txt << 'EOF'
+          GCC runtime libraries (libgomp, libquadmath)
+
+          The GCC runtime shared libraries under extlib/hm_reader/linuxa64/
+          are unmodified copies from Rocky Linux 8 (gcc 8.5.0), bundled so
+          that the OpenCourant binaries run on systems where they are not
+          installed. They are licensed under the GNU General Public License
+          version 3 with the GCC Runtime Library Exception, which permits
+          this redistribution. See:
+          https://www.gnu.org/licenses/gcc-exception-3.1.html
+          Source code is available from Rocky Linux (https://rockylinux.org)
+          and the GNU project (https://gcc.gnu.org).
+          EOF
+
+          chmod 755 todeliver/${MAINDIR}/exec/*
+          cd todeliver
+          zip -qr ${MAINDIR}_linuxa64.zip ${MAINDIR}
+          cd ..
+          ls -l todeliver/${MAINDIR}_linuxa64.zip
+
+      - name: Upload linuxa64 package
+        uses: actions/upload-artifact@v7
+        with:
+          name: OpenCourant_linuxa64
+          path: todeliver/OpenCourant_linuxa64.zip
+
+  # Prove the ARM package runs on a bare system: minimal Rocky Linux 8.10
+  # container with only the shipped libraries.
+  selftest_linuxa64:
+    needs: [set_tag, package_linuxa64]
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: "docker.io/rockylinux/rockylinux:8.10"
+
+    steps:
+
+      - name: Install minimal tooling
+        run: |
+          dnf -q -y install unzip git tar gzip > /dev/null
+
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+          ref: ${{ needs.set_tag.outputs.tag }}
+
+      - name: Download linuxa64 package
+        uses: actions/download-artifact@v8
+        with:
+          name: OpenCourant_linuxa64
+
+      - name: Run a model from the package only
+        run: |
+          set -e
+          unzip -q OpenCourant_linuxa64.zip -d /opt
+          export OPENCOURANT_PATH=/opt/OpenCourant
+          export LD_LIBRARY_PATH=$OPENCOURANT_PATH/extlib/hm_reader/linuxa64:$OPENCOURANT_PATH/extlib/h3d/lib/linuxa64
+          export RAD_CFG_PATH=$OPENCOURANT_PATH/hm_cfg_files
+          export OMP_NUM_THREADS=2
+          cd qa-tests/miniqa/ACCELEROMETRES/data
+          $OPENCOURANT_PATH/exec/starter_linuxa64_gf -i ACCELERO_0000.rad -np 1 > starter.out 2>&1 || { cat starter.out; exit 1; }
+          $OPENCOURANT_PATH/exec/engine_linuxa64_gf -i ACCELERO_0001.rad > engine.out 2>&1 || { cat engine.out; exit 1; }
+          grep "NORMAL TERMINATION" engine.out
+
   delivery:
-    needs: [set_tag, build_linux, build_tools, qa_release, build_windows, build_tools_windows, qa_release_windows, package_windows, selftest_windows]
+    needs: [set_tag, build_linux, build_tools, qa_release, build_windows, build_tools_windows, qa_release_windows, package_windows, selftest_windows, build_linuxa64, build_tools_linuxa64, qa_release_linuxa64, package_linuxa64, selftest_linuxa64]
     runs-on: ubuntu-latest
 
     env:
@@ -760,11 +1096,20 @@ jobs:
             echo ""
             echo "The required Intel runtime libraries are shipped in \`extlib/intelOneAPI_runtime/win64\` (Intel Simplified Software License, see the bundled license directory)."
             echo ""
+            echo "## Linux arm64 package"
+            echo ""
+            echo "Unzip \`OpenCourant_linuxa64.zip\` and set:"
+            echo ""
+            echo '```sh'
+            echo 'export OPENCOURANT_PATH=/path/to/OpenCourant'
+            echo 'export LD_LIBRARY_PATH=$OPENCOURANT_PATH/extlib/hm_reader/linuxa64:$OPENCOURANT_PATH/extlib/h3d/lib/linuxa64:$LD_LIBRARY_PATH'
+            echo 'export RAD_CFG_PATH=$OPENCOURANT_PATH/hm_cfg_files'
+            echo '```'
+            echo ""
             echo "**Notes**"
-            echo "- The Linux \`_ompi\` Engine requires OpenMPI 4.1.2 installed in \`/opt/openmpi\` (see INSTALL.md); the SMP Engines run standalone"
+            echo "- The Linux \`_ompi\` Engines require OpenMPI 4.1.2 installed in \`/opt/openmpi\` (see INSTALL.md); the SMP Engines run standalone"
             echo "- The Windows package is SMP only (no MPI Engine yet)"
             echo "- \`/ALE/STRUCTURED_MESH\` is not supported by the recovered input readers and is rejected explicitly"
-            echo "- A Linux arm64 package is not available yet"
             echo ""
             echo "Thank you for using OpenCourant! 👉 [Share your feedback on the OpenCourant forum](https://github.com/orgs/${{ github.repository_owner }}/discussions)"
           } > release_body.md
@@ -777,7 +1122,8 @@ jobs:
             --title "OpenCourant stable build ${DATEOFTHETAG}" \
             --notes-file release_body.md \
             todeliver/${MAINDIR}_linux64.zip \
-            exec_tmp/OpenCourant_win64/OpenCourant_win64.zip
+            exec_tmp/OpenCourant_win64/OpenCourant_win64.zip \
+            exec_tmp/OpenCourant_linuxa64/OpenCourant_linuxa64.zip
 
       - name: Clean old github releases and tags
         run: |
