@@ -96,6 +96,7 @@ jobs:
 
     env:
       QA_TIMEOUT_PER_TEST_WIN: 500
+      QA_NB_PROC: 2
       QA_NB_THREAD: 2
 
     steps:
