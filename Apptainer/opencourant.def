@@ -2,8 +2,13 @@ Bootstrap: docker
 From: ghcr.io/opencourant/opencourant:latest
 
 # OpenCourant solver container from the published multi-arch runtime image
-# (linux64 and linuxa64). No compilation required:
+# (linux64 and linuxa64). No compilation required. Note that every stable
+# release also attaches ready-made OpenCourant_<arch>.sif assets, so you may
+# not need to build anything at all:
 #
+#   https://github.com/OpenCourant/OpenCourant/releases
+#
+# Otherwise:
 #   apptainer build opencourant.sif opencourant.def
 # or simply:
 #   apptainer pull opencourant.sif docker://ghcr.io/opencourant/opencourant:latest

@@ -175,8 +175,12 @@ the OpenMPI runtime is included, and all environment variables are preset.
 
 #### With Apptainer
 
-* Pull the image (or build from `Apptainer/opencourant.def`; use
-  `Apptainer/opencourant_build.def` to compile from source instead)
+* Every stable release attaches ready-made SIF images
+  (`OpenCourant_linux64.sif`, `OpenCourant_linuxa64.sif`) on
+  [the releases page](https://github.com/OpenCourant/OpenCourant/releases).
+  Download one, or pull the container image instead (build from
+  `Apptainer/opencourant.def`, or compile from source with
+  `Apptainer/opencourant_build.def`):
 
         apptainer pull opencourant.sif docker://ghcr.io/opencourant/opencourant:latest
 

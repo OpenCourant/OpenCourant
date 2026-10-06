@@ -1104,6 +1104,21 @@ jobs:
             echo ""
             echo "The required Intel runtime libraries are shipped in \`extlib/intelOneAPI_runtime/win64\` (Intel Simplified Software License, see the bundled license directory)."
             echo ""
+            echo "## Containers"
+            echo ""
+            echo "Multi-arch (x86-64 + arm64) images, OpenMPI included:"
+            echo ""
+            echo '```text'
+            echo 'docker.io/opencourant/opencourant:'"${TAG}"
+            echo 'ghcr.io/opencourant/opencourant:'"${TAG}"
+            echo '```'
+            echo ""
+            echo "Apptainer users can download \`OpenCourant_linux64.sif\` / \`OpenCourant_linuxa64.sif\` below, or pull the image directly:"
+            echo ""
+            echo '```sh'
+            echo 'apptainer pull opencourant.sif docker://ghcr.io/opencourant/opencourant:'"${TAG}"
+            echo '```'
+            echo ""
             echo "## Linux arm64 package"
             echo ""
             echo "Unzip \`OpenCourant_linuxa64.zip\` and set:"
@@ -1276,6 +1291,39 @@ jobs:
         run: |
           docker push ${IMAGE}:${TAG}-${{ matrix.platform }}
           docker push ${HUB_IMAGE}:${TAG}-${{ matrix.platform }}
+
+      - name: Install Apptainer
+        run: |
+          # Ubuntu 24.04 restricts unprivileged user namespaces by default
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          sudo add-apt-repository -y ppa:apptainer/ppa
+          sudo apt-get install -y apptainer
+          apptainer --version
+
+      - name: Build SIF
+        run: |
+          apptainer build OpenCourant_${{ matrix.arch_dir }}.sif \
+            docker-daemon:${IMAGE}:${TAG}-${{ matrix.platform }}
+          ls -lh OpenCourant_${{ matrix.arch_dir }}.sif
+
+      - name: SIF qa
+        run: |
+          set -e
+          cp -a qa-tests/miniqa/ACCELEROMETRES/data /tmp/sifmodel
+          cd /tmp/sifmodel
+          export OMP_NUM_THREADS=2
+          apptainer exec ${GITHUB_WORKSPACE}/OpenCourant_${{ matrix.arch_dir }}.sif \
+            starter -i ACCELERO_0000.rad -np 1 > s.out 2>&1 || { cat s.out; exit 1; }
+          apptainer exec ${GITHUB_WORKSPACE}/OpenCourant_${{ matrix.arch_dir }}.sif \
+            engine -i ACCELERO_0001.rad > e.out 2>&1 || { cat e.out; exit 1; }
+          grep "NORMAL TERMINATION" e.out
+
+      - name: Upload SIF to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${TAG}" --repo "${{ github.repository }}" --clobber \
+            OpenCourant_${{ matrix.arch_dir }}.sif
 
   publish_manifest:
     needs: [set_tag, publish_containers]
