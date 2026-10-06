@@ -1,0 +1,25 @@
+Bootstrap: docker
+From: ghcr.io/opencourant/opencourant:latest
+
+# OpenCourant solver container from the published multi-arch runtime image
+# (linux64 and linuxa64). No compilation required:
+#
+#   apptainer build opencourant.sif opencourant.def
+# or simply:
+#   apptainer pull opencourant.sif docker://ghcr.io/opencourant/opencourant:latest
+#
+# Run examples:
+#   apptainer exec opencourant.sif starter -i MODEL_0000.rad -np 4
+#   apptainer exec opencourant.sif engine  -i MODEL_0001.rad
+#   apptainer exec opencourant.sif mpiexec -np 4 engine_ompi -i MODEL_0001.rad
+#
+# Pin a release with a dated tag, e.g.
+# docker://ghcr.io/opencourant/opencourant:latest-20261006
+
+%labels
+    org.opencontainers.image.source https://github.com/OpenCourant/OpenCourant
+
+%help
+    OpenCourant explicit finite element solver (Starter + Engine, SMP and
+    OpenMPI). Executables are on PATH: starter, engine, engine_ompi,
+    anim_to_vtk_*, th_to_csv_* (plus _sp single-precision variants).

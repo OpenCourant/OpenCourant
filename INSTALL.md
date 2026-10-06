@@ -145,32 +145,52 @@ Note that variables `RAD_CFG_PATH` and `RAD_H3D_PATH` start with `c:` unlike the
         starter_win64.exe -i [Starter input file] -np [P]
         mpirun -delegate -np [P]  engine_win64.exe  -i [Engine input file]
 
-### Running OpenRadioss container using Apptainer under Linux
+### Running the OpenCourant container under Linux
 
-#### Running OpenRadioss container without MPI
+Prebuilt multi-arch (x86_64 and arm64) solver containers are published with
+every stable release:
 
-* Define number of OpenMP threads
+        ghcr.io/opencourant/opencourant:latest
+        ghcr.io/opencourant/opencourant:latest-YYYYMMDD
+
+The executables are on `PATH` inside the container under convenience names
+(`starter`, `engine`, `engine_ompi`, plus `_sp` single-precision variants),
+the OpenMPI runtime is included, and all environment variables are preset.
+
+#### With Docker or Podman
+
+* Run Starter and Engine from the directory that contains the input file
+
+        docker run --rm -v $PWD:/work -e OMP_NUM_THREADS=[N] \
+            ghcr.io/opencourant/opencourant starter -i [Starter input file] -np 1
+        docker run --rm -v $PWD:/work -e OMP_NUM_THREADS=[N] \
+            ghcr.io/opencourant/opencourant engine -i [Engine input file]
+
+* Run with P MPI processes and N threads per domain
+
+        docker run --rm -v $PWD:/work -e OMP_NUM_THREADS=[N] \
+            ghcr.io/opencourant/opencourant starter -i [Starter input file] -np [P]
+        docker run --rm -v $PWD:/work -e OMP_NUM_THREADS=[N] \
+            ghcr.io/opencourant/opencourant mpiexec -np [P] engine_ompi -i [Engine input file]
+
+#### With Apptainer
+
+* Pull the image (or build from `Apptainer/opencourant.def`; use
+  `Apptainer/opencourant_build.def` to compile from source instead)
+
+        apptainer pull opencourant.sif docker://ghcr.io/opencourant/opencourant:latest
+
+* Run without MPI from the directory that contains the input file
 
         export OMP_NUM_THREADS=[N]
+        apptainer exec opencourant.sif starter -i [Starter input file] -np 1
+        apptainer exec opencourant.sif engine -i [Engine input file]
 
-* Run OpenRadioss Starter and Engine from the directory that contains the input file
-
-        openradioss.sif starter_linux64_gf -i [Starter input file] -np 1
-        openradioss.sif engine_linux64_gf -i [Engine input file]
-
-#### Running OpenRadioss container with MPI+OpenMP
-
-* Set up environment variables, assuming that OpenMPI is installed in `/opt/openmpi`
-
-        export LD_LIBRARY_PATH=/opt/openmpi/lib:$LD_LIBRARY_PATH
-        export PATH=/opt/openmpi/bin:$PATH
-
-* Run OpenRadioss with P MPI processes and N threads per domain from the directory that contains the input file
+* Run with P MPI processes and N threads per domain
 
         export OMP_NUM_THREADS=[N]
-        export OMP_STACKSIZE=400m
-        openradioss.sif starter_linux64_gf -i [Starter input file] -np [P]
-        mpiexec  --map-by socket:PE=$OMP_NUM_THREADS --bind-to core -n [P] openradioss.sif engine_linux64_gf_ompi -i [Engine input file]
+        apptainer exec opencourant.sif starter -i [Starter input file] -np [P]
+        apptainer exec opencourant.sif mpiexec --map-by socket:PE=$OMP_NUM_THREADS --bind-to core -np [P] engine_ompi -i [Engine input file]
 
 ## Running OpenRadioss test suite from the source code
 

@@ -1,3 +1,6 @@
+# Builds OpenCourant from source inside the container. For a prebuilt
+# container use opencourant.def (bootstraps from the published image).
+
 Bootstrap: docker
 From: rockylinux:9
 
@@ -20,7 +23,7 @@ make install
 
 cd /opt
 git lfs install
-git clone --depth 1 --branch main https://github.com/OpenRadioss/OpenRadioss.git
+git clone --depth 1 --branch main https://github.com/OpenCourant/OpenCourant.git OpenRadioss
 cd /opt/OpenRadioss/starter
 ./build_script.sh -arch=linux64_gf -nt=$NCPU -release
 cd /opt/OpenRadioss/engine

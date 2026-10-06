@@ -28,6 +28,7 @@ on:
 permissions:
   contents: write
   discussions: write
+  packages: write
 
 env:
   QA_TIMEOUT_PER_TEST_LINUX: 150
@@ -1190,9 +1191,104 @@ jobs:
 
             console.log(`Discussion created: ${discussion.createDiscussion.discussion.url}`);
 
+  # Solver runtime containers, built from the just-released packages and
+  # published only after the release itself succeeded.
+  publish_containers:
+    needs: [set_tag, delivery]
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: amd64
+            runner: ubuntu-latest
+            arch_dir: linux64
+            pkg: OpenCourant_linux64
+            bld_image: ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2
+
+          - platform: arm64
+            runner: ubuntu-24.04-arm
+            arch_dir: linuxa64
+            pkg: OpenCourant_linuxa64
+            bld_image: ghcr.io/opencourant/linuxa64-bld-qa:ompi4.1.2
+
+    env:
+      IMAGE: ghcr.io/opencourant/opencourant
+      TAG: ${{ needs.set_tag.outputs.tag }}
+
+    steps:
+
+      # Dockerfile and smoke-test model come from main (the workflow ref),
+      # package content from the release artifacts
+      - name: Checkout git sources
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+
+      - name: Download package artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ matrix.pkg }}
+          path: containers/solver
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        run: |
+          docker build \
+            --build-arg BLD_IMAGE=${{ matrix.bld_image }} \
+            --build-arg ARCH_DIR=${{ matrix.arch_dir }} \
+            --build-arg PKG_ZIP=${{ matrix.pkg }}.zip \
+            -t ${IMAGE}:${TAG}-${{ matrix.platform }} \
+            containers/solver
+
+      - name: Smoke test (SMP and MPI)
+        run: |
+          set -e
+          cp -a qa-tests/miniqa/ACCELEROMETRES/data /tmp/model
+          docker run --rm -v /tmp/model:/work ${IMAGE}:${TAG}-${{ matrix.platform }} \
+            bash -c "starter -i ACCELERO_0000.rad -np 1 > s.out 2>&1 && engine -i ACCELERO_0001.rad > e.out 2>&1 && grep -q 'NORMAL TERMINATION' e.out && starter -i ACCELERO_0000.rad -np 2 > s2.out 2>&1 && mpiexec -np 2 engine_ompi -i ACCELERO_0001.rad > e2.out 2>&1 && grep -q 'NORMAL TERMINATION' e2.out"
+          echo "Smoke test passed on ${{ matrix.platform }}"
+
+      - name: Push image
+        run: |
+          docker push ${IMAGE}:${TAG}-${{ matrix.platform }}
+
+  publish_manifest:
+    needs: [set_tag, publish_containers]
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE: ghcr.io/opencourant/opencourant
+      TAG: ${{ needs.set_tag.outputs.tag }}
+
+    steps:
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create multi-arch manifest
+        run: |
+          docker buildx imagetools create \
+            -t ${IMAGE}:${TAG} \
+            -t ${IMAGE}:latest \
+            ${IMAGE}:${TAG}-amd64 \
+            ${IMAGE}:${TAG}-arm64
+          docker buildx imagetools inspect ${IMAGE}:${TAG}
+
   cleanup_artifacts:
     if: ${{ always() && github.repository_owner == 'OpenCourant' }}
-    needs: [delivery]
+    needs: [delivery, publish_manifest]
     runs-on: ubuntu-latest
     permissions:
       actions: write
