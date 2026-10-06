@@ -1058,6 +1058,13 @@ jobs:
           cd ..
           ls -l todeliver/${MAINDIR}_linux64.zip
 
+      # Consumed by publish_containers (amd64)
+      - name: Upload linux64 package
+        uses: actions/upload-artifact@v7
+        with:
+          name: OpenCourant_linux64
+          path: todeliver/OpenCourant_linux64.zip
+
       - name: Release the new binaries
         run: |
           set -e
@@ -1215,6 +1222,7 @@ jobs:
 
     env:
       IMAGE: ghcr.io/opencourant/opencourant
+      HUB_IMAGE: docker.io/opencourant/opencourant
       TAG: ${{ needs.set_tag.outputs.tag }}
 
     steps:
@@ -1239,6 +1247,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: opencourant
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build image
         run: |
           docker build \
@@ -1246,6 +1261,7 @@ jobs:
             --build-arg ARCH_DIR=${{ matrix.arch_dir }} \
             --build-arg PKG_ZIP=${{ matrix.pkg }}.zip \
             -t ${IMAGE}:${TAG}-${{ matrix.platform }} \
+            -t ${HUB_IMAGE}:${TAG}-${{ matrix.platform }} \
             containers/solver
 
       - name: Smoke test (SMP and MPI)
@@ -1256,9 +1272,10 @@ jobs:
             bash -c "starter -i ACCELERO_0000.rad -np 1 > s.out 2>&1 && engine -i ACCELERO_0001.rad > e.out 2>&1 && grep -q 'NORMAL TERMINATION' e.out && starter -i ACCELERO_0000.rad -np 2 > s2.out 2>&1 && mpiexec -np 2 engine_ompi -i ACCELERO_0001.rad > e2.out 2>&1 && grep -q 'NORMAL TERMINATION' e2.out"
           echo "Smoke test passed on ${{ matrix.platform }}"
 
-      - name: Push image
+      - name: Push images
         run: |
           docker push ${IMAGE}:${TAG}-${{ matrix.platform }}
+          docker push ${HUB_IMAGE}:${TAG}-${{ matrix.platform }}
 
   publish_manifest:
     needs: [set_tag, publish_containers]
@@ -1266,6 +1283,7 @@ jobs:
 
     env:
       IMAGE: ghcr.io/opencourant/opencourant
+      HUB_IMAGE: docker.io/opencourant/opencourant
       TAG: ${{ needs.set_tag.outputs.tag }}
 
     steps:
@@ -1277,7 +1295,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create multi-arch manifest
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: opencourant
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Create multi-arch manifests
         run: |
           docker buildx imagetools create \
             -t ${IMAGE}:${TAG} \
@@ -1285,6 +1310,13 @@ jobs:
             ${IMAGE}:${TAG}-amd64 \
             ${IMAGE}:${TAG}-arm64
           docker buildx imagetools inspect ${IMAGE}:${TAG}
+
+          docker buildx imagetools create \
+            -t ${HUB_IMAGE}:${TAG} \
+            -t ${HUB_IMAGE}:latest \
+            ${HUB_IMAGE}:${TAG}-amd64 \
+            ${HUB_IMAGE}:${TAG}-arm64
+          docker buildx imagetools inspect ${HUB_IMAGE}:${TAG}
 
   cleanup_artifacts:
     if: ${{ always() && github.repository_owner == 'OpenCourant' }}
