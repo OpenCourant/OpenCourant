@@ -42,19 +42,31 @@ runs:
         HPCKIT_COMPONENTS: ${{ inputs.hpckit-components }}
         BASEKIT_COMPONENTS: ${{ inputs.basekit-components }}
       run: |
-        echo === Installing HPC Kit components: %HPCKIT_COMPONENTS%
-        curl.exe -s --output %TEMP%\hpckit.exe --url %HPCKIT_URL% --retry 5 --retry-delay 5
-        start /b /wait %TEMP%\hpckit.exe -s -x -f hpckit_extracted --log hpckit_extract.log
-        hpckit_extracted\bootstrapper.exe --list-components
-        hpckit_extracted\bootstrapper.exe -s --action install --components=%HPCKIT_COMPONENTS% --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=.
-        if errorlevel 1 exit /b 1
-        rd /s/q hpckit_extracted
-        del %TEMP%\hpckit.exe
+        call :install_kit hpckit "%HPCKIT_URL%" "%HPCKIT_COMPONENTS%" || exit /b 1
+        call :install_kit basekit "%BASEKIT_URL%" "%BASEKIT_COMPONENTS%" || exit /b 1
+        exit /b 0
 
-        echo === Installing Base Kit components: %BASEKIT_COMPONENTS%
-        curl.exe -s --output %TEMP%\basekit.exe --url %BASEKIT_URL% --retry 5 --retry-delay 5
-        start /b /wait %TEMP%\basekit.exe -s -x -f basekit_extracted --log basekit_extract.log
-        basekit_extracted\bootstrapper.exe -s --action install --components=%BASEKIT_COMPONENTS% --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=.
-        if errorlevel 1 exit /b 1
-        rd /s/q basekit_extracted
-        del %TEMP%\basekit.exe
+        REM install_kit <name> <url> <components>
+        REM The ~3 GB offline installers occasionally arrive corrupted
+        REM (the extraction step detects it), so download+extract retries.
+        :install_kit
+        setlocal
+        set NAME=%~1
+        set URL=%~2
+        set COMPONENTS=%~3
+        set /a ATTEMPT=0
+        :retry
+        set /a ATTEMPT+=1
+        if %ATTEMPT% gtr 3 ( echo %NAME%: giving up after 3 attempts & endlocal & exit /b 1 )
+        echo === %NAME%: download attempt %ATTEMPT%
+        if exist %TEMP%\%NAME%.exe del %TEMP%\%NAME%.exe
+        if exist %NAME%_extracted rd /s/q %NAME%_extracted
+        curl.exe -s --output %TEMP%\%NAME%.exe --url "%URL%" --retry 5 --retry-delay 5
+        start /b /wait %TEMP%\%NAME%.exe -s -x -f %NAME%_extracted --log %NAME%_extract.log
+        if not exist %NAME%_extracted\bootstrapper.exe ( echo %NAME%: extraction failed, retrying & goto retry )
+        echo === %NAME%: installing components %COMPONENTS%
+        %NAME%_extracted\bootstrapper.exe -s --action install --components=%COMPONENTS% --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=.
+        if errorlevel 1 ( echo %NAME%: bootstrapper failed & endlocal & exit /b 1 )
+        rd /s/q %NAME%_extracted
+        del %TEMP%\%NAME%.exe
+        endlocal & exit /b 0
