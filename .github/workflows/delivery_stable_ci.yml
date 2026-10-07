@@ -319,7 +319,7 @@ jobs:
     needs: set_tag
     # windows-2022: the VS2026 STL on windows-latest requires Clang 20+,
     # while icx 2025.0 is Clang 19-based (error STL1000).
-    # SMP variants only; engine_win64_impi* (Intel MPI) deferred.
+    # SMP and Intel MPI (impi) variants.
     runs-on: windows-2022
 
     env:
@@ -345,6 +345,16 @@ jobs:
             precision: sp
             binary: engine
 
+          - build: engine_win64_impi
+            precision: dp
+            binary: engine
+            mpi: impi
+
+          - build: engine_win64_impi_sp
+            precision: sp
+            binary: engine
+            mpi: impi
+
     steps:
 
       - name: Checkout git sources
@@ -362,11 +372,14 @@ jobs:
           for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvars64.bat"
           call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat"
           call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat"
+          call "C:\Program Files (x86)\Intel\oneAPI\mpi\latest\env\vars.bat"
+          set mpi_opts=
+          if not "${{ matrix.mpi }}"=="" set mpi_opts=-mpi=${{ matrix.mpi }}
           echo =========================================
           echo --  BUILD ${{ matrix.build }} --
           echo =========================================
           cd ${{ matrix.binary }}
-          call build_windows.bat -release -arch=win64 -prec=${{ matrix.precision }} -nt=%BUILD_NB_THREAD%
+          call build_windows.bat -release -arch=win64 -prec=${{ matrix.precision }} -nt=%BUILD_NB_THREAD% %mpi_opts%
           cd ..
           if not exist exec ( echo No exec directory & exit /b 1 )
           dir exec
@@ -422,6 +435,12 @@ jobs:
           for %%F in (mkl_core.2.dll mkl_def.2.dll mkl_avx2.2.dll mkl_avx512.2.dll mkl_intel_thread.2.dll) do (
             copy "%MKL_BIN%\%%F" intelOneAPI_runtime\win64\ || exit /b 1
           )
+          set MPI_BIN=C:\Program Files (x86)\Intel\oneAPI\mpi\latest\bin
+          set MPI_FABRIC=C:\Program Files (x86)\Intel\oneAPI\mpi\latest\opt\mpi\libfabric\bin
+          for %%F in (impi.dll mpiexec.exe hydra_service.exe hydra_bstrap_proxy.exe hydra_pmi_proxy.exe) do (
+            copy "%MPI_BIN%\%%F" intelOneAPI_runtime\win64\ || exit /b 1
+          )
+          xcopy /y /e "%MPI_FABRIC%\*" intelOneAPI_runtime\win64\ || exit /b 1
           dir intelOneAPI_runtime\win64
           mkdir intelOneAPI_runtime\license\Compiler
           mkdir intelOneAPI_runtime\license\MKL
@@ -471,7 +490,7 @@ jobs:
       - name: Download engine artifacts
         uses: actions/download-artifact@v8
         with:
-          name: bins-win64-dp-engine_win64
+          name: bins-win64-dp-engine_win64_impi
           path: exec
           merge-multiple: true
 
@@ -489,6 +508,12 @@ jobs:
           %TEMP%\cygsetup.exe -q -R C:\cygwin64 -s https://mirrors.kernel.org/sourceware/cygwin/ -P perl -l %TEMP%\cygpkgs
           C:\cygwin64\bin\bash --login -c "perl --version | head -2"
 
+      - name: Register the Intel MPI hydra service
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Intel\oneAPI\mpi\latest\env\vars.bat"
+          hydra_service.exe -install
+
       # Running cygwin from cmd => neither indentation nor comment inside the
       # bash -c string (same constraint as the inherited OpenRadioss CI)
       - name: Running qa
@@ -496,6 +521,7 @@ jobs:
         run: >
           call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat" &&
           call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat" &&
+          call "C:\Program Files (x86)\Intel\oneAPI\mpi\latest\env\vars.bat" &&
           C:\cygwin64\bin\bash --login -c "
           cd %cd:\=/%;
           chmod -R 755 extlib/* exec/* 2>/dev/null;
@@ -503,7 +529,7 @@ jobs:
           rm -f QA.summary;
           chmod 755 or_qa_script or_radioss.pl;
           export PATH=../../extlib/hm_reader/win64:../../extlib/h3d/lib/win64:$PATH;
-          cmd=\"./or_qa_script ../../exec/engine_win64.exe 1.0 --env:RAD_CFG_PATH=../../hm_cfg_files --system_run --env:KMP_STACKSIZE=400m --env:OMP_NUM_THREADS=%QA_NB_THREAD% --output_failures_stdout --xtra_args='--timeoutscript=%QA_TIMEOUT_PER_TEST_WIN%' \";
+          cmd=\"./or_qa_script ../../exec/engine_win64_impi.exe 1.0 --env:RAD_CFG_PATH=../../hm_cfg_files --system_run --env:KMP_STACKSIZE=400m --exec_script_args='mpiexec -np %QA_NB_PROC%' --env:OMP_NUM_THREADS=%QA_NB_THREAD% --output_failures_stdout --xtra_args='--timeoutscript=%QA_TIMEOUT_PER_TEST_WIN%' \";
           echo \"--  $cmd --\";
           eval $cmd;
           res=$?;
@@ -627,7 +653,12 @@ jobs:
           if errorlevel 1 ( type starter.out & echo STARTER FAILED & exit /b 1 )
           "%OPENCOURANT_PATH%\exec\engine_win64.exe" -i ACCELERO_0001.rad > engine.out 2>&1
           if errorlevel 1 ( type engine.out & echo ENGINE FAILED & exit /b 1 )
-          findstr /C:"NORMAL TERMINATION" engine.out || ( type engine.out & exit /b 1 )
+          findstr /C:"NORMAL TERMINATION" engine.out
+          "%OPENCOURANT_PATH%\exec\starter_win64.exe" -i ACCELERO_0000.rad -np 2 > starter2.out 2>&1
+          if errorlevel 1 ( type starter2.out & echo MPI STARTER FAILED & exit /b 1 )
+          mpiexec -localonly -np 2 "%OPENCOURANT_PATH%\exec\engine_win64_impi.exe" -i ACCELERO_0001.rad > engine2.out 2>&1
+          if errorlevel 1 ( type engine2.out & echo MPI ENGINE FAILED & exit /b 1 )
+          findstr /C:"NORMAL TERMINATION" engine2.out || ( type engine.out & exit /b 1 )
 
   build_linuxa64:
     needs: set_tag
@@ -1102,7 +1133,13 @@ jobs:
             echo 'set KMP_STACKSIZE=400m'
             echo '```'
             echo ""
-            echo "The required Intel runtime libraries are shipped in \`extlib/intelOneAPI_runtime/win64\` (Intel Simplified Software License, see the bundled license directory)."
+            echo "The required Intel runtime libraries, including the Intel MPI runtime, are shipped in \`extlib/intelOneAPI_runtime/win64\` (Intel Simplified Software License, see the bundled license directory). Single-node MPI runs need no setup:"
+            echo ""
+            echo '```bat'
+            echo 'mpiexec -localonly -np 4 %OPENCOURANT_PATH%\exec\engine_win64_impi.exe -i MODEL_0001.rad'
+            echo '```'
+            echo ""
+            echo "For the classic service-based launcher run \`hydra_service.exe -install\` once as administrator and use \`mpiexec -delegate\`; multi-node clusters should install the full Intel MPI runtime."
             echo ""
             echo "## Containers"
             echo ""
@@ -1131,7 +1168,6 @@ jobs:
             echo ""
             echo "**Notes**"
             echo "- The Linux \`_ompi\` Engines require OpenMPI 4.1.2 installed in \`/opt/openmpi\` (see INSTALL.md); the SMP Engines run standalone"
-            echo "- The Windows package is SMP only (no MPI Engine yet)"
             echo "- \`/ALE/STRUCTURED_MESH\` is not supported by the recovered input readers and is rejected explicitly"
             echo ""
             echo "Thank you for using OpenCourant! 👉 [Share your feedback on the OpenCourant forum](https://github.com/orgs/${{ github.repository_owner }}/discussions)"

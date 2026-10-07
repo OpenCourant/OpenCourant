@@ -135,15 +135,24 @@ Note that variables `RAD_CFG_PATH` and `RAD_H3D_PATH` start with `c:` unlike the
 
 #### Under Windows in cmd shell
 
-* Intel OneAPI MPI must be installed and setup. Variables can be loaded separately:
-
-        call [Path to Intel OneAPI]\env\vars.bat
-
-* Run OpenRadioss with P MPI processes and N threads per domain from the directory that contains the binaries
+* Release packages bundle the Intel MPI runtime in
+  `extlib\intelOneAPI_runtime\win64` (already on `PATH` after the
+  environment setup above). Single-node runs need no further setup:
 
         set OMP_NUM_THREADS=[N]
         starter_win64.exe -i [Starter input file] -np [P]
-        mpirun -delegate -np [P]  engine_win64.exe  -i [Engine input file]
+        mpiexec -localonly -np [P] engine_win64_impi.exe -i [Engine input file]
+
+* For the service-based launcher, register the hydra service once as
+  administrator and use `-delegate`:
+
+        hydra_service.exe -install
+        mpiexec -delegate -np [P] engine_win64_impi.exe -i [Engine input file]
+
+* Multi-node clusters, and builds made from source, should install Intel
+  oneAPI MPI and load its variables instead:
+
+        call [Path to Intel OneAPI]\env\vars.bat
 
 ### Running the OpenCourant container under Linux
 
