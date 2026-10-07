@@ -494,6 +494,8 @@ C N=6  : Abort with system Error (return code=3)
 C N=7  : Exiting only - errors before MPP_INIT or after MPI_FINALIZE
 C ----------------------------------------------
 
+C N==7 exits before initialization: no outputs exist to clean up
+      IF (N == 7) CALL MY_EXIT(2)
 
 C ----------------------------------------------
 C TEMPO FILES Clean
@@ -514,7 +516,7 @@ C-----------------------------------------------
 C -----------------------------------------------
 C TH FILES
 C -----------------------------------------------
-       IF (ISPMD == 0) THEN
+       IF (ASSOCIATED(OUTPUT_PTR) .AND. ISPMD == 0) THEN
 
             ! Close the TH file
             IF (OUTPUT_PTR%TH%TH_WRITE_TYPE == 3)THEN
