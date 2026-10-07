@@ -19,7 +19,7 @@ Copyright>        Commercial Alternative: Simcenter Radioss Software
 Copyright>
 Copyright>        As an alternative to this open-source version, Siemens also offers Simcenter(TM) Radioss(R)
 Copyright>        software under a commercial license.  Contact Siemens to discuss further if the
-Copyright>        commercial version may interest you:
+Copyright>        commercial version may interest you: 
 Copyright>        https://www.siemens.com/en-us/products/simcenter/mechanical-simulation/radioss/.
 !||====================================================================
 !||    arret                            ../engine/source/system/arret.F
@@ -438,7 +438,7 @@ Copyright>        https://www.siemens.com/en-us/products/simcenter/mechanical-si
 !||    qa_out_mod                       ../common_source/qa/qa_out_mod.F
 !||    scratchfile_mod                  ../engine/share/modules/scratchfiles_mod.F
 !||====================================================================
-      SUBROUTINE ARRET (N)
+      SUBROUTINE ARRET (N)  
       USE H3D_MOD
       USE INOUTFILE_MOD
       USE QA_OUT_MOD
@@ -494,6 +494,8 @@ C N=6  : Abort with system Error (return code=3)
 C N=7  : Exiting only - errors before MPP_INIT or after MPI_FINALIZE
 C ----------------------------------------------
 
+C N==7 exits before initialization: no outputs exist to clean up
+      IF (N == 7) CALL MY_EXIT(2)
 
 C ----------------------------------------------
 C TEMPO FILES Clean
@@ -542,7 +544,7 @@ C -----------------------------------------------
 C -----------------------------------------------
 C ABF FILES
 C -----------------------------------------------
-      IF (ISPMD == 0 .AND. NABFILE /= 0 .AND.
+      IF (ISPMD == 0 .AND. NABFILE /= 0 .AND. 
      .  (ABINP /= 0 .AND. ABOUT /= 0 )  ) THEN
 #ifdef DNC
 
@@ -652,12 +654,12 @@ C -----------------------------------------------
         ClOSE(UNIT=IFXM)
         CALL DELETE_USER_FILE(IFXM_FN,LEN_IFXM_FN)
       ENDIF
-
+      
       IF(USE_IFXS == 1)THEN
         CLOSE(UNIT=IFXS)
         CALL DELETE_USER_FILE(IFXS_FN,LEN_IFXS_FN)
       ENDIF
-
+      
       IF (USE_IEIGM==1)THEN
         CLOSE(IEIGM)
         CALL DELETE_USER_FILE(IEIGM_FN,LEN_IEIGM_FN)
@@ -675,7 +677,7 @@ C
               CALL MY_EXIT(2)
         CASE (1)
               IF (ISPMD==0) THEN
-                WRITE(IOUT,1000)          ! Normal termination
+                WRITE(IOUT,1000)          ! Normal termination 
                 WRITE(ISTDO,1050)
 
                 WRITE(IOUT,1200) NCYCLE   ! Total Number of cycles
@@ -700,7 +702,7 @@ C
               if (ispmd==0)then
                 if (output_ptr%checksum%checksum_count > 0) then
                     IZIP=0
-                    CALL COMPUTE_BINARY_CHECKSUM(OUTPUT_PTR%checksum%files_checksum ,
+                    CALL COMPUTE_BINARY_CHECKSUM(OUTPUT_PTR%checksum%files_checksum , 
      *                                            C_LOC(OUTPUT_PTR%OUT_FILENAME),
      *                                            LEN_TRIM(OUTPUT_PTR%OUT_FILENAME),
      *                                            IZIP)
@@ -708,7 +710,7 @@ C
                     CALL checksum_option_checksum_file(output_ptr%checksum,rootnam,rootlen,chrun)   ! Deck checksums print
                 end if
               endif
-
+              
               IF(ISPMD /=0) THEN
                  CALL DELETE_USER_FILE(IUSC4_FNAM,LEN_IUSC4_FNAM)
               ENDIF
@@ -716,7 +718,7 @@ C
               CLOSE(UNIT=IUHIS)
 
               CALL MY_EXIT(0)
-
+ 
         CASE (2)
               WRITE(IOUT,1100)
               WRITE(ISTDO,1150)
@@ -759,7 +761,7 @@ C
 
         CASE(4)
               WRITE(ISTDO,1400)
-              IF (ISPMD==0) THEN
+              IF (ISPMD==0) THEN     
               ENDIF
               CALL SPMD_KILL(2)
               CALL MY_EXIT(2)
@@ -776,7 +778,7 @@ C
               CALL SPMD_KILL(3)
         CASE (7)                                     ! Exiting only - errors before MPP_INIT
              CALL MY_EXIT(2)
-      END SELECT
+      END SELECT 
 
 C
  1000 FORMAT(///'     NORMAL TERMINATION      ')

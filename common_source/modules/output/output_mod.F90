@@ -335,7 +335,7 @@
         end type output_
 
 
-        type(output_),pointer :: output_ptr      ! pointer to output structure (need for arret)
+        type(output_),pointer :: output_ptr => null()      ! pointer to output structure (need for arret)
 
 
       contains
