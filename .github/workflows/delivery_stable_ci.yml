@@ -468,6 +468,7 @@ jobs:
     runs-on: windows-2022
 
     env:
+      QA_NB_PROC: 2
       QA_NB_THREAD: 2
 
     steps:
