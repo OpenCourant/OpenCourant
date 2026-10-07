@@ -226,7 +226,7 @@ jobs:
     if: ${{ github.repository_owner == 'OpenCourant' }}
     # windows-2022: the VS2026 STL on windows-latest requires Clang 20+,
     # while icx 2025.0 is Clang 19-based (error STL1000).
-    # SMP variants only; engine_win64_impi* (Intel MPI) deferred.
+    # SMP and Intel MPI (impi) variants.
     runs-on: windows-2022
 
     env:
@@ -252,6 +252,16 @@ jobs:
             precision: sp
             binary: engine
 
+          - build: engine_win64_impi
+            precision: dp
+            binary: engine
+            mpi: impi
+
+          - build: engine_win64_impi_sp
+            precision: sp
+            binary: engine
+            mpi: impi
+
     steps:
 
       - name: Checkout git sources
@@ -268,11 +278,14 @@ jobs:
           for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvars64.bat"
           call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat"
           call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat"
+          call "C:\Program Files (x86)\Intel\oneAPI\mpi\latest\env\vars.bat"
+          set mpi_opts=
+          if not "${{ matrix.mpi }}"=="" set mpi_opts=-mpi=${{ matrix.mpi }}
           echo =========================================
           echo --  BUILD ${{ matrix.build }} --
           echo =========================================
           cd ${{ matrix.binary }}
-          call build_windows.bat -release -arch=win64 -prec=${{ matrix.precision }} -nt=%BUILD_NB_THREAD%
+          call build_windows.bat -release -arch=win64 -prec=${{ matrix.precision }} -nt=%BUILD_NB_THREAD% %mpi_opts%
           cd ..
           if not exist exec ( echo No exec directory & exit /b 1 )
           dir exec
@@ -290,6 +303,7 @@ jobs:
 
     env:
       QA_TIMEOUT_PER_TEST_WIN: 500
+      QA_NB_PROC: 2
       QA_NB_THREAD: 2
 
     steps:
@@ -311,7 +325,7 @@ jobs:
       - name: Download engine artifacts
         uses: actions/download-artifact@v8
         with:
-          name: bins-win64-dp-engine_win64
+          name: bins-win64-dp-engine_win64_impi
           path: exec
           merge-multiple: true
 
@@ -330,6 +344,12 @@ jobs:
           %TEMP%\cygsetup.exe -q -R C:\cygwin64 -s https://mirrors.kernel.org/sourceware/cygwin/ -P perl -l %TEMP%\cygpkgs
           C:\cygwin64\bin\bash --login -c "perl --version | head -2"
 
+      - name: Register the Intel MPI hydra service
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Intel\oneAPI\mpi\latest\env\vars.bat"
+          hydra_service.exe -install
+
       # Running cygwin from cmd => neither indentation nor comment inside the
       # bash -c string (same constraint as the inherited OpenRadioss CI)
       - name: Running qa
@@ -337,6 +357,7 @@ jobs:
         run: >
           call "C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\env\vars.bat" &&
           call "C:\Program Files (x86)\Intel\oneAPI\mkl\2025.0\env\vars.bat" &&
+          call "C:\Program Files (x86)\Intel\oneAPI\mpi\latest\env\vars.bat" &&
           C:\cygwin64\bin\bash --login -c "
           cd %cd:\=/%;
           chmod -R 755 extlib/* exec/* 2>/dev/null;
@@ -344,7 +365,7 @@ jobs:
           rm -f QA.summary;
           chmod 755 or_qa_script or_radioss.pl;
           export PATH=../../extlib/hm_reader/win64:../../extlib/h3d/lib/win64:$PATH;
-          cmd=\"./or_qa_script ../../exec/engine_win64.exe 1.0 --env:RAD_CFG_PATH=../../hm_cfg_files --system_run --env:KMP_STACKSIZE=400m --env:OMP_NUM_THREADS=%QA_NB_THREAD% --output_failures_stdout --xtra_args='--timeoutscript=%QA_TIMEOUT_PER_TEST_WIN%' \";
+          cmd=\"./or_qa_script ../../exec/engine_win64_impi.exe 1.0 --env:RAD_CFG_PATH=../../hm_cfg_files --system_run --env:KMP_STACKSIZE=400m --exec_script_args='mpiexec -np %QA_NB_PROC%' --env:OMP_NUM_THREADS=%QA_NB_THREAD% --output_failures_stdout --xtra_args='--timeoutscript=%QA_TIMEOUT_PER_TEST_WIN%' \";
           echo \"--  $cmd --\";
           eval $cmd;
           res=$?;
