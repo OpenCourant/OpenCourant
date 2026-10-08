@@ -1,19 +1,39 @@
 #!/usr/bin/env python3
+# Copyright>        OpenCourant
+# Copyright>        Copyright (C) 2026 OpenCourant contributors
+# Copyright>
+# Copyright>        This program is free software: you can redistribute it and/or modify
+# Copyright>        it under the terms of the GNU Affero General Public License as published by
+# Copyright>        the Free Software Foundation, either version 3 of the License, or
+# Copyright>        (at your option) any later version.
+# Copyright>
+# Copyright>        This program is distributed in the hope that it will be useful,
+# Copyright>        but WITHOUT ANY WARRANTY; without even the implied warranty of
+# Copyright>        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# Copyright>        GNU Affero General Public License for more details.
+# Copyright>
+# Copyright>        You should have received a copy of the GNU Affero General Public License
+# Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# Copyright>
+# Copyright>
+# Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+# Copyright>        See COPYRIGHT.md at the root of the repository for the full
+# Copyright>        copyright and attribution statement.
 """Check and fix OpenCourant copyright headers.
 
 OpenCourant is the community continuation of OpenRadioss.  Every source
 file carries exactly one of three header variants (see COPYRIGHT.md):
 
-  legacy    Siemens (upstream) notice + OpenCourant pointer.
+  legacy    Legacy (Siemens) notice + OpenCourant pointer.
             Only valid for files that are unchanged from the
             `openradioss-final` tag.  Never generated anew.
 
-  modified  Siemens notice + "Modified by the OpenCourant project"
-            block + pointer.  Required for upstream files that have
+  modified  Legacy notice + "Modified by the OpenCourant project"
+            block + pointer.  Required for legacy files that have
             been changed relative to `openradioss-final`.
 
   new       OpenCourant notice + pointer (no Siemens block).  Required
-            for files that have no upstream ancestor.
+            for files that have no pre-fork ancestor.
 
 Usage:
   check_headers.py --all                    validate every tracked file
@@ -31,7 +51,7 @@ import re
 import subprocess
 import sys
 
-UPSTREAM_TAG = "openradioss-final"
+FORK_POINT_TAG = "openradioss-final"
 ENCODING = "latin1"
 PAD = "        "  # 8 spaces between the Copyright> marker and the text
 
@@ -127,7 +147,7 @@ def git_blob(ref, path):
 
 def tag_file_set():
     try:
-        out = git("ls-tree", "-r", "--name-only", UPSTREAM_TAG)
+        out = git("ls-tree", "-r", "--name-only", FORK_POINT_TAG)
     except subprocess.CalledProcessError:
         return None
     return set(out.splitlines())
@@ -312,8 +332,8 @@ def check_file(path, tag_files, current_year, require_current_year=False):
     in_tag = tag_files is None or path in tag_files
 
     if header is None:
-        # Upstream shipped a handful of sources without headers; those
-        # stay headerless.  Only genuinely new files must gain a header.
+        # The legacy code base shipped a handful of sources without headers;
+        # those stay headerless.  Only genuinely new files must gain a header.
         ext = os.path.splitext(path)[1]
         if ext in REQUIRED_EXT and tag_files is not None \
                 and path not in tag_files:
@@ -325,7 +345,7 @@ def check_file(path, tag_files, current_year, require_current_year=False):
         # Structure is broken; pick the right target from git facts.
         if tag_files is not None and path not in tag_files:
             rep.error(err, ("new", str(current_year)))
-        elif content_differs(UPSTREAM_TAG, path):
+        elif content_differs(FORK_POINT_TAG, path):
             rep.error(err, ("modified", str(current_year)))
         else:
             rep.error(err, ("legacy", None))
@@ -336,14 +356,14 @@ def check_file(path, tag_files, current_year, require_current_year=False):
     # git-consistency checks
     if tag_files is not None:
         if variant == "new" and in_tag:
-            rep.error("has new-file header but exists in %s" % UPSTREAM_TAG,
+            rep.error("has new-file header but exists in %s" % FORK_POINT_TAG,
                       ("modified", years or str(current_year)))
         elif variant in ("legacy", "modified") and not in_tag:
-            rep.error("has upstream header but is absent from %s"
-                      % UPSTREAM_TAG, ("new", years or str(current_year)))
-        elif variant == "legacy" and content_differs(UPSTREAM_TAG, path):
+            rep.error("has legacy header but is absent from %s"
+                      % FORK_POINT_TAG, ("new", years or str(current_year)))
+        elif variant == "legacy" and content_differs(FORK_POINT_TAG, path):
             rep.error("content differs from %s but header lacks the "
-                      "OpenCourant modification notice" % UPSTREAM_TAG,
+                      "OpenCourant modification notice" % FORK_POINT_TAG,
                       ("modified", str(current_year)))
 
     if require_current_year and years is not None and not rep.errors:
@@ -438,7 +458,7 @@ def main():
     tag_files = tag_file_set()
     if tag_files is None:
         print("WARNING: tag %r not found; skipping git-consistency checks"
-              % UPSTREAM_TAG, file=sys.stderr)
+              % FORK_POINT_TAG, file=sys.stderr)
 
     work = []  # (path, require_current_year)
     seen = set()
