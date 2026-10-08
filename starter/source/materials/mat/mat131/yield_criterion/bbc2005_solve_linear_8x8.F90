@@ -13,14 +13,6 @@
 !Copyright>
 !Copyright>        You should have received a copy of the GNU Affero General Public License
 !Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
-!Copyright>
-!Copyright>
-!Copyright>        Commercial Alternative: Simcenter Radioss Software
-!Copyright>
-!Copyright>        As an alternative to this open-source version, Siemens also offers Simcenter(TM) Radioss(R)
-!Copyright>        software under a commercial license.  Contact Siemens to discuss further if the
-!Copyright>        commercial version may interest you: 
-!Copyright>        https://www.siemens.com/en-us/products/simcenter/mechanical-simulation/radioss/.
 !||====================================================================
 !||    bbc2005_solve_linear_8x8_mod   ../starter/source/materials/mat/mat131/yield_criterion/bbc2005_solve_linear_8x8.F90
 !||--- called by ------------------------------------------------------

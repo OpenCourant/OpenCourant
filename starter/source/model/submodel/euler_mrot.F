@@ -13,14 +13,6 @@ Copyright>        GNU Affero General Public License for more details.
 Copyright>
 Copyright>        You should have received a copy of the GNU Affero General Public License
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
-Copyright>
-Copyright>
-Copyright>        Commercial Alternative: Simcenter Radioss Software
-Copyright>
-Copyright>        As an alternative to this open-source version, Siemens also offers Simcenter(TM) Radioss(R)
-Copyright>        software under a commercial license.  Contact Siemens to discuss further if the
-Copyright>        commercial version may interest you: 
-Copyright>        https://www.siemens.com/en-us/products/simcenter/mechanical-simulation/radioss/.
 C   This function computes a 3d rotation matrix.
 C   The rotation is about the axis <rx,ry,rz> .
 C   The rotation angle [sqrt(rx**2+ry**2+rz**2)] is specified in degrees. 

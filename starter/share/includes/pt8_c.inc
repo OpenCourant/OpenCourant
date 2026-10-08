@@ -13,14 +13,6 @@ Copyright>        GNU Affero General Public License for more details.
 Copyright>
 Copyright>        You should have received a copy of the GNU Affero General Public License
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
-Copyright>
-Copyright>
-Copyright>        Commercial Alternative: Simcenter Radioss Software
-Copyright>
-Copyright>        As an alternative to this open-source version, Siemens also offers Simcenter(TM) Radioss(R)
-Copyright>        software under a commercial license.  Contact Siemens to discuss further if the
-Copyright>        commercial version may interest you: 
-Copyright>        https://www.siemens.com/en-us/products/simcenter/mechanical-simulation/radioss/.
 C.../PT8/
       COMMON /PT8/ P11, P12, P13, P14, P15, P16, P17, P18, P21, P22,
      .   P23, P24, P25, P26, P27, P28, P31, P32, P33, P34, P35, P36,
