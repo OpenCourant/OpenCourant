@@ -13,6 +13,11 @@ Copyright>        GNU Affero General Public License for more details.
 Copyright>
 Copyright>        You should have received a copy of the GNU Affero General Public License
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+Copyright>
+Copyright>
+Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+Copyright>        See COPYRIGHT.md at the root of the repository for the full
+Copyright>        copyright and attribution statement.
 #define TO1D(i,j,k,s1,s2) i+(j-1)*s1+(k-1)*s1*s2
 !||====================================================================
 !||    spmd_i25front_init    ../engine/source/mpi/interfaces/spmd_i25front.F

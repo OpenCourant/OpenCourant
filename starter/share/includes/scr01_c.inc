@@ -13,6 +13,11 @@ Copyright>        GNU Affero General Public License for more details.
 Copyright>
 Copyright>        You should have received a copy of the GNU Affero General Public License
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+Copyright>
+Copyright>
+Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+Copyright>        See COPYRIGHT.md at the root of the repository for the full
+Copyright>        copyright and attribution statement.
 C.../SCR01/
       COMMON /SCR01/ NB1, NB2, NB3, NB4, NB5, NB6, NB7, NB8, NB9, NB10,
      .   NB11, NB12, NB13, NB14, NB15, NB16, NB17, NB18, NB19, NB20

@@ -13,6 +13,11 @@
 !Copyright>
 !Copyright>        You should have received a copy of the GNU Affero General Public License
 !Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+!Copyright>
+!Copyright>
+!Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+!Copyright>        See COPYRIGHT.md at the root of the repository for the full
+!Copyright>        copyright and attribution statement.
 ! ======================================================================================================================
 ! fypp template — generates my_alloc_impl_idx4.F90
 ! Do NOT edit the generated my_alloc_impl_idx4.F90 directly; edit this file and re-run fypp.

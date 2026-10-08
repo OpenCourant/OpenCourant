@@ -13,6 +13,11 @@ Copyright>        GNU Affero General Public License for more details.
 Copyright>
 Copyright>        You should have received a copy of the GNU Affero General Public License
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+Copyright>
+Copyright>
+Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+Copyright>        See COPYRIGHT.md at the root of the repository for the full
+Copyright>        copyright and attribution statement.
 CC      MAXLAW  = Nombre max des lois ds Radioss
 cc                Si besoin de depasser 511 lois, il faut augmenter la taille
 cc                du cle de tri des groupes elementaires

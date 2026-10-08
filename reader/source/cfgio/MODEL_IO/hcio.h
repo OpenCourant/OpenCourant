@@ -13,6 +13,11 @@
 //Copyright>
 //Copyright>        You should have received a copy of the GNU Affero General Public License
 //Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//Copyright>
+//Copyright>
+//Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+//Copyright>        See COPYRIGHT.md at the root of the repository for the full
+//Copyright>        copyright and attribution statement.
 /* The following ifdef block is the standard way of creating macros which make exporting 
    from a DLL simpler. All files within this DLL are compiled with the HCIO_DATA_DLL_EXPORTS
    symbol defined on the command line. This symbol should not be defined on any project

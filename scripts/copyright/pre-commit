@@ -1,51 +1,24 @@
 #!/bin/bash
 #
-# This file should be added to the .git/hooks repository
-# 
+# OpenCourant copyright-header hook.
+# Install by copying (or symlinking) into .git/hooks/pre-commit.
+#
+# Verifies that every staged file carries a valid header and the
+# OpenCourant modification notice, repairing in place where possible
+# (repaired files are re-staged).  The same check runs in CI
+# (scripts/copyright/check_headers.py), so skipping this hook only
+# defers the failure.
 
-lof=$(git diff --cached --name-only --diff-filter=ACM)  
-for fic in $lof
-do
-if [[ "$fic" == *".F" ]]; then
-        if cmp --silent -- <(head -n 15 scripts/copyright/f_COPYRIGHT.txt) <(head -n 15 ${fic}) 
-        then
-                echo $fic "copyright ok"
-        else
-                echo $fic "copyright update "
-                cp $fic ${fic}.backup
-                sed -i "/Copyright>/d" ${fic}
-                cat scripts/copyright/f_COPYRIGHT.txt ${fic} > pre_commit.tmp
-                mv pre_commit.tmp ${fic}
-                git add ${fic}
-                rm ${fic}.backup
-        fi
-fi
-if [[ "$fic" == *".F90" ]]; then
-	findent  -I6 -ofree -i2 < ${fic} > ${fic}.backup
-        if cmp --silent -- <(cat ${fic}) <(cat ${fic}.backup) 
-        then
-                echo $fic "indentation ok"
-        else
-                echo $fic "indentation update "
-                mv ${fic}.backup ${fic}
-                git add ${fic}
-        fi
-fi
-if [[ "$fic" == *".F90" ]]; then
-        if cmp --silent -- <(head -n 15 scripts/copyright/F90_copyright.txt) <(head -n 15 ${fic}) 
-        then
-                echo $fic "copyright ok"
-        else
-                echo $fic "copyright update "
-                cp $fic ${fic}.backup
-                sed -i "/Copyright>/d" ${fic}
-                cat scripts/copyright/F90_copyright.txt ${fic} > pre_commit.tmp
-                mv pre_commit.tmp ${fic}
-                git add ${fic}
-                rm ${fic}.backup
-        fi
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+if ! python3 scripts/copyright/check_headers.py --fix $staged; then
+    echo "pre-commit: copyright headers could not all be repaired" >&2
+    exit 1
 fi
 
-done
+# Re-stage anything the fixer touched
+changed=$(git diff --name-only -- $staged)
+[ -n "$changed" ] && git add $changed
+
 exit 0
-

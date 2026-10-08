@@ -13,6 +13,11 @@ Copyright>        GNU Affero General Public License for more details.
 Copyright>
 Copyright>        You should have received a copy of the GNU Affero General Public License
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+Copyright>
+Copyright>
+Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+Copyright>        See COPYRIGHT.md at the root of the repository for the full
+Copyright>        copyright and attribution statement.
 C.../SCR08/
       COMMON /SCR08_A/ XX1(4), XX2(4), XX3(4), IX(4), IY(4)
       INTEGER IX, IY

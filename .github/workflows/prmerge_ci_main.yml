@@ -27,6 +27,22 @@ env:
 
 jobs:
 
+  # Backstop for the Developer CI gate: every copyright header on main
+  # must match one of the canonical variants (see COPYRIGHT.md and
+  # scripts/copyright/check_headers.py).
+  check_headers:
+    if: ${{ github.repository_owner == 'OpenCourant' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Full history: the checker validates headers against the
+          # openradioss-final tag.
+          fetch-depth: 0
+
+      - name: Check all headers
+        run: python3 scripts/copyright/check_headers.py --all
+
   build_linux:
     if: ${{ github.repository_owner == 'OpenCourant' }}
     runs-on: ubuntu-latest

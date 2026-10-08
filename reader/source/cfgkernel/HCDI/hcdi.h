@@ -13,6 +13,11 @@
 //Copyright>
 //Copyright>        You should have received a copy of the GNU Affero General Public License
 //Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//Copyright>
+//Copyright>
+//Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+//Copyright>        See COPYRIGHT.md at the root of the repository for the full
+//Copyright>        copyright and attribution statement.
 #if defined(OS_WIN) && !defined(NO_DECLS)
     #ifdef HC_DATA_DLL_EXPORTS
         #undef HC_DATA_DLL_API

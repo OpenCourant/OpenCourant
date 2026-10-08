@@ -13,6 +13,11 @@ Copyright>        GNU Affero General Public License for more details.
 Copyright>
 Copyright>        You should have received a copy of the GNU Affero General Public License
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+Copyright>
+Copyright>
+Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+Copyright>        See COPYRIGHT.md at the root of the repository for the full
+Copyright>        copyright and attribution statement.
 Cmw41j8.../KINCOD/
 Cmw41p2      COMMON /KINCOD/ IBC,ITF,IWL,IRB,IRB2,IVF,IRV,IJO,IRBM
 Cmw41p2      INTEGER IBC(0:511), ITF(0:511), IWL(0:511),IRB(0:511),IRB2(0:511),  

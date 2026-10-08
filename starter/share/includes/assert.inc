@@ -13,6 +13,11 @@ Copyright>        GNU Affero General Public License for more details.
 Copyright>
 Copyright>        You should have received a copy of the GNU Affero General Public License
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+Copyright>
+Copyright>
+Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+Copyright>        See COPYRIGHT.md at the root of the repository for the full
+Copyright>        copyright and attribution statement.
 #ifdef WITH_ASSERT
 #define ASSERT(COND) IF(.NOT. (COND)) write(6,*) "Assertion " , #COND, " failed at ",__FILE__,":",__LINE__ 
 #define PRINTIF(COND,VAL) IF(COND) write(6,*)  #COND, "at ",__FILE__,":",__LINE__,#VAL,VAL

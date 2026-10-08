@@ -13,6 +13,11 @@ Copyright>        GNU Affero General Public License for more details.
 Copyright>
 Copyright>        You should have received a copy of the GNU Affero General Public License
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+Copyright>
+Copyright>
+Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+Copyright>        See COPYRIGHT.md at the root of the repository for the full
+Copyright>        copyright and attribution statement.
 !  ------------------------------------
       SUBROUTINE INIT_DATA(NBR_GROUP,PM,EINT,OFF,SIGY,DT1C,VOL0,GS,
      .         DPLA,PLA,FOR,SIGO,SIGN,DEP,A)

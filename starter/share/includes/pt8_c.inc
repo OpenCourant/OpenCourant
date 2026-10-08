@@ -13,6 +13,11 @@ Copyright>        GNU Affero General Public License for more details.
 Copyright>
 Copyright>        You should have received a copy of the GNU Affero General Public License
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+Copyright>
+Copyright>
+Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+Copyright>        See COPYRIGHT.md at the root of the repository for the full
+Copyright>        copyright and attribution statement.
 C.../PT8/
       COMMON /PT8/ P11, P12, P13, P14, P15, P16, P17, P18, P21, P22,
      .   P23, P24, P25, P26, P27, P28, P31, P32, P33, P34, P35, P36,

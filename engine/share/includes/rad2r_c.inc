@@ -13,6 +13,11 @@ Copyright>        GNU Affero General Public License for more details.
 Copyright>
 Copyright>        You should have received a copy of the GNU Affero General Public License
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+Copyright>
+Copyright>
+Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+Copyright>        See COPYRIGHT.md at the root of the repository for the full
+Copyright>        copyright and attribution statement.
 C.../RAD2R/
       COMMON /RAD2R/IRAD2R,R2R_ACTIV,FLG_RST,NBK,TMAN_R2R,
      .        R2R_MFILR,R2R_CTR,R2R_MSTOP,SOCK0,R2R_SIU,

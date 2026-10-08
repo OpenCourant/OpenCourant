@@ -13,6 +13,18 @@
 !Copyright>
 !Copyright>        You should have received a copy of the GNU Affero General Public License
 !Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+!Copyright>
+!Copyright>
+!Copyright>        OpenCourant
+!Copyright>        Copyright (C) 2026 OpenCourant contributors
+!Copyright>
+!Copyright>        Modified by the OpenCourant project, 2026.
+!Copyright>        Modifications are licensed under the GNU Affero General Public
+!Copyright>        License, version 3 or (at your option) any later version.
+!Copyright>
+!Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+!Copyright>        See COPYRIGHT.md at the root of the repository for the full
+!Copyright>        copyright and attribution statement.
 !||====================================================================
 !||    hm_s_ale_mod   ../starter/source/devtools/hm_reader/hm_s_ale.F90
 !||--- called by ------------------------------------------------------

@@ -13,6 +13,11 @@
 !Copyright>
 !Copyright>        You should have received a copy of the GNU Affero General Public License
 !Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+!Copyright>
+!Copyright>
+!Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+!Copyright>        See COPYRIGHT.md at the root of the repository for the full
+!Copyright>        copyright and attribution statement.
 !||====================================================================
 !||    bbc2005_calcul_coeffs_mod         ../starter/source/materials/mat/mat131/yield_criterion/bbc2005_calcul_coeffs.F90
 !||--- called by ------------------------------------------------------

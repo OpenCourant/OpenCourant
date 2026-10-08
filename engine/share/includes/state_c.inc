@@ -13,6 +13,11 @@ Copyright>        GNU Affero General Public License for more details.
 Copyright>
 Copyright>        You should have received a copy of the GNU Affero General Public License
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+Copyright>
+Copyright>
+Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+Copyright>        See COPYRIGHT.md at the root of the repository for the full
+Copyright>        copyright and attribution statement.
 C.../STATE/
       COMMON /STATE/    IS_STAT_SHELL, IS_STAT_BRICK, IS_STAT_SPRING, IS_STAT_BEAM, IS_STAT_TRUSS,
      .                  IS_STAT_INIMAP1D, IS_STAT_INIMAP2D, IS_STAT_DT, IS_STAT_STRF, IS_STAT_NODE,
