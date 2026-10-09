@@ -4,4 +4,4 @@ th_to_csv is an external tool to convert OpenRadioss time history files to CSV f
 
 ## Source Code repository
 
-Source code has moved to [OpenRadioss/Tools/output_converters/th_to_csv](https://github.com/OpenRadioss/Tools/tree/main/output_converters/th_to_csv) repository
+Source code has moved to [OpenCourant/Tools/output_converters/th_to_csv](https://github.com/OpenCourant/Tools/tree/main/output_converters/th_to_csv) repository

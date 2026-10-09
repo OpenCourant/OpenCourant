@@ -2,7 +2,7 @@
 
 OpenRadioss GUI is a graphical launcher for OpenRadioss and Radioss.
 
-It is distributed with the [OpenRadioss Stable releases](https://github.com/OpenRadioss/OpenRadioss/releases)
+It is distributed with the [OpenRadioss Stable releases](https://github.com/OpenCourant/OpenCourant/releases)
 
 ![image](./openradioss_gui.png)
 
@@ -28,7 +28,7 @@ It is distributed with the [OpenRadioss Stable releases](https://github.com/Open
           apt-get install python3
           apt install python3-tk
 
-* Download OpenRadioss stable release from [OpenRadioss Stable releases](https://github.com/OpenRadioss/OpenRadioss/releases)
+* Download OpenRadioss stable release from [OpenRadioss Stable releases](https://github.com/OpenCourant/OpenCourant/releases)
 
 * Unpack the package on your machine
 
@@ -42,4 +42,4 @@ It is distributed with the [OpenRadioss Stable releases](https://github.com/Open
 
 ## Access the source code
 
-Visit [OpenRadioss/Tools/openradioss_gui](https://github.com/OpenRadioss/Tools/tree/main/openradioss_gui) repository.
+Visit [OpenRadioss/Tools/openradioss_gui](https://github.com/OpenCourant/Tools/tree/main/openradioss_gui) repository.

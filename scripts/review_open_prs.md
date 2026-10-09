@@ -7,7 +7,7 @@ publishes only a validated review summary.
 ## Requirements
 
 - Run from an OpenRadioss Git checkout. Review commits are fetched directly
-  from `https://github.com/OpenRadioss/OpenRadioss.git`; no remote name is
+  from `https://github.com/OpenCourant/OpenCourant.git`; no remote name is
   required.
 - Authenticate `gh` for `OpenRadioss/OpenRadioss`.
 - Authenticate Copilot CLI separately, or set `COPILOT_GITHUB_TOKEN`.

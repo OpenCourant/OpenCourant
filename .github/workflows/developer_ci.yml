@@ -46,6 +46,27 @@ jobs:
             echo "::warning::This PR modifies workflow files — review them with extra care."
           fi
 
+  # Copyright-header gate: every header in the tree must match one of the
+  # canonical variants, and every file changed by the PR must carry the
+  # OpenCourant modification notice with a current year.
+  # On failure: python3 scripts/copyright/check_headers.py --fix <files>
+  check_headers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Full history: the checker validates headers against the
+          # openradioss-final tag and diffs against the base branch.
+          fetch-depth: 0
+
+      - name: Check all headers
+        run: python3 scripts/copyright/check_headers.py --all
+
+      - name: Check changed files carry the modification notice
+        run: >
+          python3 scripts/copyright/check_headers.py
+          --changed "origin/${{ github.event.pull_request.base.ref }}"
+
   build-for-qa:
     needs: guard
     if: ${{ github.repository_owner == 'OpenCourant' }}

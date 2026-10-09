@@ -4,7 +4,7 @@ This tool implements the published three-surface Riedel-Hiermaier-Thoma
 concrete model as an OpenRadioss `/MAT/USER01` solid material. It supplies
 the Starter reader, Engine update, a standalone material module, and
 reproducible tests. Build it against the official
-[user library SDK](https://github.com/OpenRadioss/Tools/tree/main/userlib_sdk)
+[user library SDK](https://github.com/OpenCourant/Tools/tree/main/userlib_sdk)
 and load the resulting library with `-dylib` in both Starter and Engine.
 
 The implementation includes pressure and Lode dependence, separate tensile
@@ -99,7 +99,7 @@ repository. On Windows, use the `ar.exe` belonging to the GNU compiler;
 an unrelated archiver on `PATH` will not work.
 
 ```text
-git clone https://github.com/OpenRadioss/Tools.git cbuild_rht/Tools
+git clone https://github.com/OpenCourant/Tools.git cbuild_rht/Tools
 git -C cbuild_rht/Tools checkout 4e52942e191d3b1ede4b320fb0f1780f4e41b59a
 cmake -S cbuild_rht/Tools/userlib_sdk/source -B cbuild_rht/sdk -G Ninja -Darch=win64 -Dcompiler=gfortran -Dprecision=dp
 cmake --build cbuild_rht/sdk
@@ -117,8 +117,12 @@ survives reconfinement, and does not prevent later strain-based erosion.
 The script writes its source hash and measured results to
 `return_robustness.json` in the chosen build directory.
 
-Extract the [official Windows release](https://github.com/OpenRadioss/OpenRadioss/releases/tag/latest-20260728)
-under `cbuild_rht/runtime`, so that `cbuild_rht/runtime/OpenRadioss/exec`
+Extract a Windows release package (`OpenCourant_win64.zip` from the
+[releases page](https://github.com/OpenCourant/OpenCourant/releases), or the
+archived upstream [`latest-20260728`](https://github.com/OpenCourant/extlib/releases/tag/upstream-latest-20260728-win64)
+originally used for validation) under `cbuild_rht/runtime`, so that
+`cbuild_rht/runtime/OpenCourant/exec` (or `.../OpenRadioss/exec` for the
+archived package)
 contains Starter, Engine and `th_to_csv_win64.exe`. Then run:
 
 ```text

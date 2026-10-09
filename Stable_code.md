@@ -15,7 +15,7 @@ Review the [How to Contribute](Contributing.md) section to create a clone of Ope
 
 ### Download from the release area
 
-Source code can be downloaded from the [Releases area on GitHub](https://github.com/OpenRadioss/OpenRadioss/releases)
+Source code can be downloaded from the [Releases area on GitHub](https://github.com/OpenCourant/OpenCourant/releases)
 
 ![image](/doc/stable_release.png)
 

@@ -6,7 +6,7 @@ The OpenRadioss community takes the security of our product seriously, including
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them to the OpenRadioss community manager at [webmaster@openradioss.org](mailto:webmaster@openradioss.org).
+Instead, please report them to the OpenCourant security contact at [security@opencourant.org](mailto:security@opencourant.org).
 
 When reporting, please include the following information:
 
@@ -28,7 +28,7 @@ You can find further information in the GitHub documentation:
 
 Third-party libraries may introduce security issues when provided as source code and/or binaries.
 
-Contact the OpenRadioss community manager at [webmaster@openradioss.org](mailto:webmaster@openradioss.org) if you need to add a Third-party library to your development project.
+Contact the OpenCourant maintainers at [hello@opencourant.org](mailto:hello@opencourant.org) if you need to add a Third-party library to your development project.
 
 When doing so, please indicate:
 

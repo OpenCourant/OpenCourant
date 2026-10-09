@@ -15,12 +15,9 @@ Copyright>        You should have received a copy of the GNU Affero General Publ
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Copyright>
 Copyright>
-Copyright>        Commercial Alternative: Simcenter Radioss Software
-Copyright>
-Copyright>        As an alternative to this open-source version, Siemens also offers Simcenter(TM) Radioss(R)
-Copyright>        software under a commercial license.  Contact Siemens to discuss further if the
-Copyright>        commercial version may interest you: 
-Copyright>        https://www.siemens.com/en-us/products/simcenter/mechanical-simulation/radioss/.
+Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+Copyright>        See COPYRIGHT.md at the root of the repository for the full
+Copyright>        copyright and attribution statement.
 Cow41r2 #if CPP_mach == CPP_deca_mp || (CPP_mach == CPP_sgi6 && _MIPS_SZLONG == 64)||(CPP_mach == CPP_hp11 && CPP_rel == 640) || (CPP_mach == CPP_hp11 && CPP_rel == 600) || (CPP_mach == CPP_sx4_i3e && defined(_OPENMP)) || CPP_mach == CPP_pwr4  
 #if CPP_mach == CPP_deca_mp || (CPP_mach == CPP_sgi6 && _MIPS_SZLONG == 64)||(CPP_mach == CPP_hp11 && CPP_rel == 640)
 #define tlock INTEGER*8

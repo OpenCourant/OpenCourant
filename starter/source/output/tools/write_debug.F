@@ -15,12 +15,9 @@ Copyright>        You should have received a copy of the GNU Affero General Publ
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Copyright>
 Copyright>
-Copyright>        Commercial Alternative: Simcenter Radioss Software
-Copyright>
-Copyright>        As an alternative to this open-source version, Siemens also offers Simcenter(TM) Radioss(R)
-Copyright>        software under a commercial license.  Contact Siemens to discuss further if the
-Copyright>        commercial version may interest you: 
-Copyright>        https://www.siemens.com/en-us/products/simcenter/mechanical-simulation/radioss/.
+Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
+Copyright>        See COPYRIGHT.md at the root of the repository for the full
+Copyright>        copyright and attribution statement.
 C When compiled with -DDEBUG_RST
 C calls to WRITE_I_C in other parts of the code will be replace by
 C WRITE_I_C_DEBUG

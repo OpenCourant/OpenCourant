@@ -2,7 +2,6 @@
 #Compile the code, add and commit the changes
 import os
 import re
-import shutil
 
 
 debug = False
@@ -193,60 +192,12 @@ class CodeAnalyzer:
         #fill callers
         self.fill_callers()
         self.create_headers()
-        # Fix copyright headers before updating subroutine headers
-        self.fix_copyright('../starter')
-        self.fix_copyright('../engine')
-        self.fix_copyright('../common_source')
+        # Copyright headers are owned by scripts/copyright/check_headers.py
+        # (run in CI); this tool only maintains the !|| subroutine headers.
         self.update_headers('../starter')
         self.update_headers('../engine')
         self.update_headers('../common_source')
 
-
-    def fix_copyright(self, path):
-        """Walk the directory and fix copyright headers on .F and .F90 files."""
-        # Copyright template files are located in the copyright/ subdirectory
-        copyright_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'copyright')
-        for root, _, files in os.walk(path):
-            if any(exclude in root for exclude in ['extlib', 'MUMPS', 'cbuild', 'CMake']):
-                continue
-            for file in files:
-                if file.endswith('.F') or file.endswith('.F90'):
-                    file_path = os.path.join(root, file)
-                    self.add_copyright(file_path, copyright_dir)
-
-    def add_copyright(self, filename, copyright_dir):
-        """Check and fix the copyright header of a single file."""
-        if filename.endswith('.F90'):
-            template = os.path.join(copyright_dir, 'F90_copyright.txt')
-        elif filename.endswith('.F'):
-            template = os.path.join(copyright_dir, 'f_COPYRIGHT.txt')
-        else:
-            return
-
-        # Count the number of lines in the copyright template
-        with open(template) as f:
-            nbl = sum(1 for _ in f)
-
-        # Check if the file already has the correct copyright header
-        try:
-            with open(filename, encoding='latin1') as f1, open(template, encoding='latin1') as f2:
-                ok_header = True
-                for _ in range(nbl):
-                    if f1.readline() != f2.readline():
-                        ok_header = False
-                        break
-        except (IOError, OSError):
-            return
-
-        if not ok_header:
-            print(f'WARNING: {filename} has no copyright -- fixing')
-            # Prepend the copyright template, stripping any old Copyright> lines
-            shutil.copy(template, filename + '.bak')
-            with open(filename, encoding='latin1') as f1, open(filename + '.bak', 'a', encoding='latin1') as f2:
-                for line in f1:
-                    if not re.search('Copyright>', line):
-                        f2.write(line)
-            shutil.move(filename + '.bak', filename)
 
     # write a copy of the .F and .F90 files (adding suffix .new_header) with the headers for all subroutines and modules
     def update_headers(self, path):

@@ -1,11 +1,11 @@
 # How to contribute
 
-Welcome! You can report issues [here](https://github.com/OpenRadioss/OpenRadioss/issues) or ask questions [there](https://github.com/OpenRadioss/OpenRadioss/discussions).
+Welcome! You can report issues [here](https://github.com/OpenCourant/OpenCourant/issues) or ask questions [there](https://github.com/OpenCourant/OpenCourant/discussions).
 
-## Contributing code to OpenRadioss
+## Contributing code to OpenCourant
 
-Please first discuss the changes you wish to make via the [issue](https://github.com/OpenRadioss/OpenRadioss/issues) or the [discussion](https://github.com/OpenRadioss/OpenRadioss/discussions) tabs.
-You must be aware of the [license](./LICENSE.md).
+Please first discuss the changes you wish to make via the [issue](https://github.com/OpenCourant/OpenCourant/issues) or the [discussion](https://github.com/OpenCourant/OpenCourant/discussions) tabs.
+You must be aware of the [license](./LICENSE.md) and the [copyright and attribution statement](./COPYRIGHT.md).
 
 ### Settings
 
@@ -16,24 +16,9 @@ Windows users may want to use [git bash](https://gitforwindows.org/) or [WSL](ht
   * Add an [SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
   * Review your account settings, in particular: [email](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-user-account/managing-email-preferences/setting-your-commit-email-address), [2FA](https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa/configuring-two-factor-authentication)
 
-* [Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) the OpenRadioss repository
-* Install [git-lfs](https://git-lfs.github.com/).
-  On Linux, you may need to install some packages first:
-  
-  On RHEL, Rocky Linux, CentOS
-
-        sudo dnf install git-lfs
-
-  On Ubuntu, Debian
-  
-        sudo apt-get install git-lfs
-        
-   Then, activate LFS:
-
-        git lfs install
-        
-* [Clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) your fork and go into the newly created `OpenRadioss` directory.
-* From your local `OpenRadioss` directory, review your git username and [email](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-user-account/managing-email-preferences/setting-your-commit-email-address). If you don't want to expose your email address:
+* [Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) the OpenCourant repository
+* [Clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) your fork and go into the newly created `OpenCourant` directory.
+* From your local `OpenCourant` directory, review your git username and [email](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-user-account/managing-email-preferences/setting-your-commit-email-address). If you don't want to expose your email address:
 
   * Check the boxes `Keep my email addresses private` and  `Block command line pushes that expose my email` [here](https://github.com/settings/emails)
   * Find your `ID+username` [here](https://github.com/settings/emails)
@@ -46,10 +31,10 @@ git config --global user.email "<ID+username>@users.noreply.github.com"
 * Add the official repository as a remote:
 
 ```bash
-git remote add upstream git@github.com:OpenRadioss/OpenRadioss.git
+git remote add upstream git@github.com:OpenCourant/OpenCourant.git
 ```
 
-* Now `origin` points to your fork, and `upstream` points to the official OpenRadioss repository
+* Now `origin` points to your fork, and `upstream` points to the official OpenCourant repository
 
 ### Contribution workflow
 
@@ -67,12 +52,16 @@ It is not recommended to push commits directly into your `main` branch. This bra
   * `git add <filename>` each file
   * `git commit -m “<message>”` with a [good](https://openpbs.atlassian.net/wiki/spaces/DG/pages/6193155/How+To+Write+a+Good+Git+Commit+Message) message.
 
+* Before pushing, make sure the copyright headers of your changed files carry the OpenCourant modification notice (see [Copyright headers](#copyright-headers)), or install the pre-commit hook so this happens automatically:
+
+  * `python3 scripts/copyright/check_headers.py --changed origin/main --fix`
+
 * Review your history: squash your commits, write a meaningful commit message
 
   * `git rebase -i main` provided that your current branch is derived from the `main` branch.
   * To squash all your commits into your first one: replace `pick` with `squash` for all your commits except your first one. Do not squash your commits into someone else's commit. Do not embed someone else's commit into your squashed commit.
 
-* Rebase your work on the latest version of OpenRadioss (you can also follow [this](https://openpbs.atlassian.net/wiki/spaces/DG/pages/1183744006/Rebasing+Your+Dev+Branch))
+* Rebase your work on the latest version of OpenCourant (you can also follow [this](https://openpbs.atlassian.net/wiki/spaces/DG/pages/1183744006/Rebasing+Your+Dev+Branch))
 
   * `git pull --rebase upstream main`  
   * Solve conflicts, loop over:  
@@ -89,6 +78,28 @@ It is not recommended to push commits directly into your `main` branch. This bra
 * Once the merge is accepted, it is recommended to delete the branch from your fork and your local repository  
 
 ### Guidelines and coding style
+
+#### Copyright headers
+
+Every source file carries a `Copyright>` header in one of three canonical forms (see [COPYRIGHT.md](./COPYRIGHT.md)):
+
+* the **legacy notice** (Siemens) on files unchanged since the fork point,
+* the legacy notice plus the **OpenCourant modification notice** on files changed by the project,
+* an OpenCourant-only header on new files.
+
+When you modify a file, its header must carry the modification notice with a year range that includes the current year. You never need to write these by hand:
+
+```bash
+python3 scripts/copyright/check_headers.py --changed origin/main --fix
+```
+
+CI rejects pull requests with missing or stale notices. Optionally, install the commit hook so headers are repaired automatically at commit time:
+
+```bash
+cp scripts/copyright/pre-commit .git/hooks/pre-commit
+```
+
+Never edit the legacy notice text, and leave the separate license headers in `hm_cfg_files/` and `.rad` test decks untouched.
 
 #### Fortran coding style
 
