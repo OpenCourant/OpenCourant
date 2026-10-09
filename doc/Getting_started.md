@@ -1,6 +1,6 @@
 # Getting Started
 
-This describes the easiest way to install OpenRadioss on your computer and launch a computation.
+This describes the easiest way to install OpenCourant on your computer and launch a computation.
 
 This will work on most Intel and AMD computers on Windows and Linux.
 
@@ -23,7 +23,7 @@ Have a look at the [Getting Started video on Youtube](https://www.youtube.com/wa
         sudo apt-get install python3
         sudo apt-get install python-is-python3
 
-### Download latest OpenRadioss stable build
+### Download latest OpenCourant stable build
 
 [https://github.com/OpenCourant/OpenCourant/releases](https://github.com/OpenCourant/OpenCourant/releases)
 
@@ -40,10 +40,10 @@ One Tensile Test example in LS-DYNA format can be found here: [Tensile Test LS-D
 
 ### Unzip the packages in installation directory
 
-#### OpenRadioss package
+#### OpenCourant package
 
 * Windows: preferred Zip tool
-* Linux: unzip OpenRadioss_linux64.zip
+* Linux: unzip OpenCourant_linux64.zip
 
 ![image](./openradioss_installation.png)
 
@@ -51,12 +51,12 @@ One Tensile Test example in LS-DYNA format can be found here: [Tensile Test LS-D
 
 ![image](./work_directory_model.png)
 
-#### Launch the OpenRadioss GUI
+#### Launch the OpenCourant GUI
 
-In OpenRadioss installation :
+In OpenCourant installation :
 
-* On Windows : launch openradioss_gui/OpenRadioss_gui.vbs
-* On Linux : launch openradioss_gui/OpenRadioss_gui.bash
+* On Windows : launch openradioss_gui/OpenCourant_gui.vbs
+* On Linux : launch openradioss_gui/OpenCourant_gui.bash
 
 ![image](./or_gui.png)
 

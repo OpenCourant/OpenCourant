@@ -11,7 +11,7 @@ of all element computations and are present in virtually every element kernel ca
 
 ### 1.1 What is a group?
 
-All elements in OpenRadioss are partitioned into **groups**. A group is a contiguous
+All elements in OpenCourant are partitioned into **groups**. A group is a contiguous
 block of elements of the same type (solid, shell, beam, spring, …), sharing the
 same material law and property set, which are processed together in a vectorized loop
 of length at most `MVSIZ` (platform-dependent, 129 on standard linux64 builds; see §1.4).

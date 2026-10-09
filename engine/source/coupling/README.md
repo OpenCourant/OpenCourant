@@ -1,6 +1,6 @@
 # Coupling Adapter Infrastructure (preCICE & CWIPI)
 
-This directory implements the coupling infrastructure for OpenRadioss, enabling data exchange between OpenRadioss and external solvers via the preCICE and CWIPI libraries. The design supports both C++ and Fortran integration, with a separation between the C interface, C++ adapters, and Fortran bindings.
+This directory implements the coupling infrastructure for OpenCourant, enabling data exchange between OpenCourant and external solvers via the preCICE and CWIPI libraries. The design supports both C++ and Fortran integration, with a separation between the C interface, C++ adapters, and Fortran bindings.
 
 
 ## Architecture Overview
@@ -20,7 +20,7 @@ We are using preCICE v3 API, and CWIPI default (legacy) API for coupling. The ar
 2. **Configuration**: `coupling_adapter_configure()` loads a config file and sets up the adapter (participant names, mesh, data types, etc.).
 3. **Mesh/Node Setup**: `coupling_adapter_set_nodes()` and (for CWIPI) `coupling_adapter_set_mesh()` define the mesh and coupling nodes.
 4. **Initialization**: `coupling_adapter_initialize()` sets up the coupling, mesh vertices, and communication.
-5. **Data Exchange**: `coupling_adapter_write_data()` and `coupling_adapter_read_data()` transfer data (displacements, forces, positions) between OpenRadioss and the coupled solver.
+5. **Data Exchange**: `coupling_adapter_write_data()` and `coupling_adapter_read_data()` transfer data (displacements, forces, positions) between OpenCourant and the coupled solver.
 6. **Advance**: `coupling_adapter_advance()` advances the coupling by one time step.
 7. **Finalization**: `coupling_adapter_finalize()` cleans up resources.
 

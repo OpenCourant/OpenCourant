@@ -6,7 +6,7 @@ description: Refactor legacy Fortran code to modern F90 standards
 
 # Refactor Legacy Code
 
-Modernize legacy Fortran code to follow OpenRadioss standards while maintaining functionality.
+Modernize legacy Fortran code to follow OpenCourant standards while maintaining functionality.
 
 ## Modernization Strategy
 
@@ -376,7 +376,7 @@ After refactoring:
 - [ ] All regression tests pass
 - [ ] Results match original within tolerance
 - [ ] No performance degradation
-- [ ] Follows OpenRadioss coding standards
+- [ ] Follows OpenCourant coding standards
 - [ ] Comments and documentation updated
 - [ ] Module dependencies clear and minimal
 - [ ] No legacy constructs remain

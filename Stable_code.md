@@ -1,12 +1,12 @@
-# Radioss Stable Code
+# OpenCourant Stable Code
 
-This section describes how to access the stable version of OpenRadioss.
-Review the [How to Contribute](Contributing.md) section to create a clone of OpenRadioss.
+This section describes how to access the stable version of OpenCourant.
+Review the [How to Contribute](Contributing.md) section to create a clone of OpenCourant.
 
-## Stable code in OpenRadioss
+## Stable code in OpenCourant
 
-* The Stable code in OpenRadioss is set with a **git tag**
-* The Tag is in the main branch of OpenRadioss.
+* The Stable code in OpenCourant is set with a **git tag**
+* The Tag is in the main branch of OpenCourant.
 * It is named
 
       latest-YYYYMMDD
@@ -19,13 +19,13 @@ Source code can be downloaded from the [Releases area on GitHub](https://github.
 
 ![image](/doc/stable_release.png)
 
-### Obtain the stable release from a clone of the OpenRadioss repository
+### Obtain the stable release from a clone of the OpenCourant repository
 
-Command line calls permit gathering the tags from OpenRadioss:
+Command line calls permit gathering the tags from OpenCourant:
 
 #### On Linux in the clone
 
-  To gather all tags from OpenRadioss
+  To gather all tags from OpenCourant
   
       git fetch --tags origin main
 
@@ -36,20 +36,20 @@ Command line calls permit gathering the tags from OpenRadioss:
       
 #### On Windows in the clone with cmd commands
 
-  To gather all tags from OpenRadioss
+  To gather all tags from OpenCourant
 
       git fetch --tags origin main
       git tag --sort=-version:refname > tags.txt
       set /p latest-tag=<tags.txt
       git checkout %latest-tag%
 
-### Obtain the stable release from your fork of the OpenRadioss repository
+### Obtain the stable release from your fork of the OpenCourant repository
 
-Command line calls permit gathering the tags from OpenRadioss when the clone is from a fork:
+Command line calls permit gathering the tags from OpenCourant when the clone is from a fork:
 
 #### On Linux in the fork clone
 
-  To gather all tags from OpenRadioss:
+  To gather all tags from OpenCourant:
   
       git fetch --tags upstream main
 
@@ -60,7 +60,7 @@ Command line calls permit gathering the tags from OpenRadioss when the clone is 
       
 #### On Windows in the fork clone with cmd commands
 
-  To gather all tags from OpenRadioss:
+  To gather all tags from OpenCourant:
 
       git fetch --tags upstream main
 

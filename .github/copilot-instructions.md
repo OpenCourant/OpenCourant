@@ -62,7 +62,7 @@
 
 ## Tooling and Navigation
 
-- Prefer the OpenRadioss MCP index tools (`openradioss-index-*`) for code navigation and symbol lookup instead of grep/rg whenever possible.
+- Prefer the OpenCourant MCP index tools (`openradioss-index-*`) for code navigation and symbol lookup instead of grep/rg whenever possible.
 
 ## Template Structure
 
@@ -251,7 +251,7 @@ use `SPMD_MOD.F90` instead that is a wrapper around the MPI functions.
 
 ## Building
 
-OpenRadioss is made of two binaries: the starter and the engine. Run the following command `./build_script.sh -arch=linux64_gf -mpi=ompi` in the engine or the starter subdirectory to build the binaries. 
+OpenCourant is made of two binaries: the starter and the engine. Run the following command `./build_script.sh -arch=linux64_gf -mpi=ompi` in the engine or the starter subdirectory to build the binaries. 
 
 ## Project Documentation to Load by Default
 

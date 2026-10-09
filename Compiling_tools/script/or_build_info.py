@@ -57,7 +57,7 @@ if __name__ == "__main__":
     include_file.write("       INTEGER LEN_VERS, LEN_BDATE, LEN_BTIME, PMSG,LEN_MSG\n")
     include_file.write("       INTEGER LENBNAM\n")
     include_file.write("\n")
-    include_file.write("       DATA VERS/\"OpenRadioss\"/\n")
+    include_file.write("       DATA VERS/\"OpenCourant\"/\n")
     include_file.write("       PARAMETER (LEN_VERS=11)\n")
     include_file.write("\n")
     include_file.write("       DATA BDATE/__DATE__/\n")

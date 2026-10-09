@@ -1,4 +1,4 @@
-# Building OpenRadioss
+# Building OpenCourant
 
 * [Build environment on Linux](#build-environment-on-linux)
   * [System prerequisites](#system-prerequisites)
@@ -12,15 +12,15 @@
   * [Compiler environment](#compiler-environment)
   * [Build environment using cmd DOS shell](#build-environment-using-cmd-dos-shell)
   * [Build environment using Visual Studio](#build-environment-using-visual-studio-2022)
-* [How to build OpenRadioss](#how-to-build-openradioss)
+* [How to build OpenCourant](#how-to-build-openradioss)
   * [Get the source](#get-the-source)
   * [Choose the right architecture](#choose-the-right-architecture)
   * [Building on Linux](#building-on-linux)
   * [Building on Linux Arm64](#building-on-linux-arm64)
-  * [Build OpenRadioss on Windows with cmd Shell](#build-openradioss-on-windows-with-cmd-shell)
-  * [Build OpenRadioss with Visual Studio](#build-openradioss-with-visual-studio)
-  * [Build OpenRadioss with Open_Reader](#build-openradioss-with-open_reader)
-* [How to build OpenRadioss on Linux with Container using Apptainer](#how-to-build-openradioss-on-linux-with-container-using-apptainer)
+  * [Build OpenCourant on Windows with cmd Shell](#build-openradioss-on-windows-with-cmd-shell)
+  * [Build OpenCourant with Visual Studio](#build-openradioss-with-visual-studio)
+  * [Build OpenCourant with Open_Reader](#build-openradioss-with-open_reader)
+* [How to build OpenCourant on Linux with Container using Apptainer](#how-to-build-openradioss-on-linux-with-container-using-apptainer)
 * [How to debug with Visual Studio](./doc/Visual_Studio_Debugger.md)
 * [Notes on third party libraries](#notes-on-third-party-libraries)
 
@@ -32,7 +32,7 @@ Linux system with glibc version 2.17 or higher:
 
 * CentOS Stream 8, RHEL 8, Rocky Linux 8, Rocky Linux 9
 * Ubuntu 20.0.4 or higher
-* [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install): OpenRadioss works with WSL/WSL2 Ubuntu 20.04 LTS, WSL2 Ubuntu 22.x
+* [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install): OpenCourant works with WSL/WSL2 Ubuntu 20.04 LTS, WSL2 Ubuntu 22.x
 
 ### Compiler and development tools
 
@@ -81,7 +81,7 @@ Install as sudo or root
 
 ### OpenMPI installation
 
-OpenMPI is needed to build OpenRadioss with OpenMPI support.
+OpenMPI is needed to build OpenCourant with OpenMPI support.
 It is recommended to build and install OpenMPI from OpenMPI website using gcc compiler.
 
 1. Download OpenMPI tarball from  [www.openmpi.org](https://www.open-mpi.org/software/ompi/v4.1)
@@ -152,8 +152,8 @@ On Ubuntu 20.x, 22.x, 23.x...
 
 ##### Install ArmFlang compiler
 
-ARM compilers and ARM PErformance libraries are used to build OpenRadioss.
-ArmFlang 24.04 is recommended to build OpenRadioss. It uses the module system to setup the compiler.
+ARM compilers and ARM PErformance libraries are used to build OpenCourant.
+ArmFlang 24.04 is recommended to build OpenCourant. It uses the module system to setup the compiler.
 
 * ArmFlang compilers can be downloaded at:
 <https://developer.arm.com/downloads/-/arm-compiler-for-linux>
@@ -176,7 +176,7 @@ ArmFlang 24.04 is recommended to build OpenRadioss. It uses the module system to
 
 ### OpenMPI installation for Linux Arm64
 
-OpenMPI is needed to build OpenRadioss with OpenMPI support.
+OpenMPI is needed to build OpenCourant with OpenMPI support.
 It is recommended to build and install OpenMPI from OpenMPI website using gcc compiler.
 
 1. Download OpenMPI tarball from  [www.openmpi.org](https://www.open-mpi.org/software/ompi/v4.1)
@@ -209,14 +209,14 @@ Load the gcc/gfortran compiler module from ArmFlang installation using module en
 
 ## Build environment on Windows
 
-OpenRadioss was tested with OneAPI 2025.0.1 + Visual Studio 2022. It is recommended to use
-this compiler or more recent to build OpenRadioss.
+OpenCourant was tested with OneAPI 2025.0.1 + Visual Studio 2022. It is recommended to use
+this compiler or more recent to build OpenCourant.
 
 This chapter explains how to setup Windows on different build configuration
 
 * Compiler environment
-* OpenRadioss build environment using cmd.exe
-* OpenRadioss build environment using Visual Studio.
+* OpenCourant build environment using cmd.exe
+* OpenCourant build environment using Visual Studio.
 
 ### Compiler environment
 
@@ -292,18 +292,18 @@ Both are shipped with Visual Studio 2022.
 * Cmake + Builders must be installed in Visual Studio : Visual Studio is using Cmake and ninja builder (available with cmake package)
 * Intel OneAPI plugin for VS2022 must be installed and running. Otherwise Compiler is not found.
 
-## How to build OpenRadioss
+## How to build OpenCourant
 
 ### Get the source
 
 * Activate LFS: `git lfs install`
 * Run `git clone git@github.com:OpenCourant/OpenCourant.git`.
 
-See [here](./CONTRIBUTING.md) if you want to contribute to OpenRadioss.
+See [here](./CONTRIBUTING.md) if you want to contribute to OpenCourant.
 
 ### Choose the right architecture
 
-Architecture settings are designed to give best performance for OpenRadioss
+Architecture settings are designed to give best performance for OpenCourant
 on the different processors.
 
 Choose the architecture depending on your hardware and Operating system:
@@ -336,21 +336,21 @@ Choose the architecture depending on your hardware and Operating system:
 
 #### Build defaults
 
-#### Defaults when building OpenRadioss
+#### Defaults when building OpenCourant
 
-The default for OpenRadioss builds are:
+The default for OpenCourant builds are:
 
 * Linux with with Gfortran : Optimized for release usage
 * Windows with Intel Compiler : Optimized for release usage
 
-Recommendations for developers are to build OpenRadioss with :
+Recommendations for developers are to build OpenCourant with :
 
 * Address Sanitizer for Linux / Gfortran : -debug=asan
 * Check Bounds executable for Windows users : -debug=chkb
 
-#### OpenRadioss releases
+#### OpenCourant releases
 
-OpenRadioss releases packs different executables for Linux & Windows.
+OpenCourant releases packs different executables for Linux & Windows.
 Those bellongs to the most commonly used architectures:
 
 * Linux X64 : linux64_gf
@@ -358,11 +358,11 @@ Those bellongs to the most commonly used architectures:
 
 ### Building on Linux
 
-#### OpenRadioss Starter on Linux
+#### OpenCourant Starter on Linux
 
-* Enter the OpenRadioss/starter directory
+* Enter the OpenCourant/starter directory
 
-            cd OpenRadioss/starter
+            cd OpenCourant/starter
 
 * Launch `build_script.sh` to proceed to the compilation
 
@@ -370,9 +370,9 @@ Those bellongs to the most commonly used architectures:
 
             ./build_script.sh -arch=linux64_gf -release
 
-* OpenRadioss Starter: **starter_linux64_gf** binary will be copied in **OpenRadioss/exec** directory
+* OpenCourant Starter: **starter_linux64_gf** binary will be copied in **OpenCourant/exec** directory
 
-* Advanced script flags can be used to build OpenRadioss: run `./build_script.sh` without arguments:
+* Advanced script flags can be used to build OpenCourant: run `./build_script.sh` without arguments:
 
        []$ ./build_script.sh
 
@@ -401,7 +401,7 @@ Those bellongs to the most commonly used architectures:
         -no-python : do not link with python
 
   * `-arch`: lists the available architectures
-  * `-prec`: controls the OpenRadioss Floating Point Precision : dp : double Precision - Floats in 64 bits (default),  sp activates the Extended Single Precision Version (32bit)
+  * `-prec`: controls the OpenCourant Floating Point Precision : dp : double Precision - Floats in 64 bits (default),  sp activates the Extended Single Precision Version (32bit)
   * `-static-link`: Runtime libraries are statically linked in Executable (easier when executable is used on different computers).
   * `-debug=[0|1|asan]`: activates debug build (-O0 + usual debug flags).
   * `-release`:  Set build for release (optimized)
@@ -413,22 +413,22 @@ Those bellongs to the most commonly used architectures:
   * `-verbose`: compilation process is in Verbose mode
   * `-clean`: deletes compilation files and execution.
 
-#### Building OpenRadioss Engine on Linux
+#### Building OpenCourant Engine on Linux
 
-* Enter the OpenRadioss/engine directory
+* Enter the OpenCourant/engine directory
 
 * Launch `build_script.sh` to proceed to the compilation
-  To build OpenRadioss Engine with OpenMPI support
+  To build OpenCourant Engine with OpenMPI support
 
             ./build_script.sh -arch=linux64_gf -mpi=ompi -release
   
-  To build OpenRadioss without OpenMPI support (SMP parallelism):
+  To build OpenCourant without OpenMPI support (SMP parallelism):
 
             ./build_script.sh -arch=linux64_gf -release 
 
-* OpenRadioss Engine: **engine_linux64_gf** or **engine_linux64_gf_ompi** binary will be copied in **OpenRadioss/exec** directory
+* OpenCourant Engine: **engine_linux64_gf** or **engine_linux64_gf_ompi** binary will be copied in **OpenCourant/exec** directory
 
-* Advanced script flags can be used to build OpenRadioss Engine: launch `./build_script.sh` without arguments:
+* Advanced script flags can be used to build OpenCourant Engine: launch `./build_script.sh` without arguments:
 
         []$ ./build_script.sh
         
@@ -501,7 +501,7 @@ Those bellongs to the most commonly used architectures:
 
   Other controls
 
-  * `-prec=[dp|sp]`: controls the OpenRadioss Floating Point Precision
+  * `-prec=[dp|sp]`: controls the OpenCourant Floating Point Precision
     * `dp`: double Precision - Floats in 64 bits (default)
     * `sp`: activates the Extended Single Precision Version (32bit)
   * `-static-link`: Runtime libraries are statically linked in Executable (easier when executable is used on different computers).  
@@ -517,11 +517,11 @@ Those bellongs to the most commonly used architectures:
 
 ### Building on Linux Arm64
 
-#### OpenRadioss Starter on Linux Arm64
+#### OpenCourant Starter on Linux Arm64
 
-* Enter the OpenRadioss/starter directory
+* Enter the OpenCourant/starter directory
 
-            cd OpenRadioss/starter
+            cd OpenCourant/starter
 
 * Launch `build_script.sh` to proceed to the compilation
 
@@ -529,9 +529,9 @@ Those bellongs to the most commonly used architectures:
 
             ./build_script.sh -arch=linuxa64 -release
 
-* OpenRadioss Starter: **starter_linuxa64** binary will be copied in **OpenRadioss/exec** directory
+* OpenCourant Starter: **starter_linuxa64** binary will be copied in **OpenCourant/exec** directory
 
-* Advanced script flags can be used to build OpenRadioss: run `./build_script.sh` without arguments:
+* Advanced script flags can be used to build OpenCourant: run `./build_script.sh` without arguments:
 
        []$ ./build_script.sh
 
@@ -560,7 +560,7 @@ Those bellongs to the most commonly used architectures:
         -no-python : do not link with python
 
   * `-arch`: lists the available architectures
-  * `-prec`: controls the OpenRadioss Floating Point Precision : dp : double Precision - Floats in 64 bits (default),  sp activates the Extended Single Precision Version (32bit)
+  * `-prec`: controls the OpenCourant Floating Point Precision : dp : double Precision - Floats in 64 bits (default),  sp activates the Extended Single Precision Version (32bit)
   * `-static-link`: Runtime libraries are statically linked in Executable (easier when executable is used on different computers).
   * `-debug=[0|1|asan]`: activates debug build (-O0 + usual debug flags).
   * `-release`:  Set build for release (optimized)
@@ -572,22 +572,22 @@ Those bellongs to the most commonly used architectures:
   * `-verbose`: compilation process is in Verbose mode
   * `-clean`: deletes compilation files and execution.
 
-#### Building OpenRadioss Engine on Linux Arm64
+#### Building OpenCourant Engine on Linux Arm64
 
-* Enter the OpenRadioss/engine directory
+* Enter the OpenCourant/engine directory
 
 * Launch `build_script.sh` to proceed to the compilation
-  To build OpenRadioss Engine with OpenMPI support
+  To build OpenCourant Engine with OpenMPI support
 
             ./build_script.sh -arch=linuxa64 -mpi=ompi -release
   
-  To build OpenRadioss without OpenMPI support (SMP parallelism):
+  To build OpenCourant without OpenMPI support (SMP parallelism):
 
             ./build_script.sh -arch=linuxa64 -release 
 
-* OpenRadioss Engine: **engine_linuxa64** or **engine_linuxa64_ompi** binary will be copied in **OpenRadioss/exec** directory
+* OpenCourant Engine: **engine_linuxa64** or **engine_linuxa64_ompi** binary will be copied in **OpenCourant/exec** directory
 
-* Advanced script flags can be used to build OpenRadioss Engine: launch `./build_script.sh` without arguments:
+* Advanced script flags can be used to build OpenCourant Engine: launch `./build_script.sh` without arguments:
 
         []$ ./build_script.sh
         
@@ -660,7 +660,7 @@ Those bellongs to the most commonly used architectures:
 
   Other controls
 
-  * `-prec=[dp|sp]`: controls the OpenRadioss Floating Point Precision
+  * `-prec=[dp|sp]`: controls the OpenCourant Floating Point Precision
     * `dp`: double Precision - Floats in 64 bits (default)
     * `sp`: activates the Extended Single Precision Version (32bit)
   * `-static-link`: Runtime libraries are statically linked in Executable (easier when executable is used on different computers).  
@@ -674,20 +674,20 @@ Those bellongs to the most commonly used architectures:
   * `-verbose`: compilation process is in Verbose mode
   * `-clean`: deletes compilation files and execution.
 
-### Build OpenRadioss on Windows with cmd Shell
+### Build OpenCourant on Windows with cmd Shell
 
-#### OpenRadioss Starter on Windows
+#### OpenCourant Starter on Windows
 
-* Enter the OpenRadioss/starter directory
+* Enter the OpenCourant/starter directory
 
-            cd OpenRadioss/starter
+            cd OpenCourant/starter
 
 * Launch `build_windows.bat` to proceed with compilation
   Usual build is made with:
   
            build_windows.bat -arch=win64 -release
 
-* OpenRadioss Starter: **starter_win64.exe** binary is copied in **OpenRadioss/exec** directory
+* OpenCourant Starter: **starter_win64.exe** binary is copied in **OpenCourant/exec** directory
 
 * Different builds are possible : launch build_windows.bat without argument to see the possible options:
 
@@ -707,20 +707,20 @@ Those bellongs to the most commonly used architectures:
            -verbose           : Verbose build
            -clean             : clean build directory
 
-#### OpenRadioss Engine on Windows
+#### OpenCourant Engine on Windows
 
-* Enter the OpenRadioss/engine directory
+* Enter the OpenCourant/engine directory
 
 * Launch `build_windows.bat` to proceed to the compilation
-  To build OpenRadioss Engine with Intel MPI support
+  To build OpenCourant Engine with Intel MPI support
 
             ./build_windows.bat -arch=win64 -mpi=impi
 
-  To build OpenRadioss without Intel MPI support (SMP parallelism):
+  To build OpenCourant without Intel MPI support (SMP parallelism):
 
             ../build_windows.bat -arch=win64 -release
 
-* OpenRadioss Engine: **engine_win64_impi.exe** or **engine_win64.exe** binary are copied in **OpenRadioss/exec** directory
+* OpenCourant Engine: **engine_win64_impi.exe** or **engine_win64.exe** binary are copied in **OpenCourant/exec** directory
 
 * Different builds are possible : launch build_windows.bat without argument to see the possible options:
 
@@ -741,14 +741,14 @@ Those bellongs to the most commonly used architectures:
           -verbose           : Verbose build
           -clean             : clean build directory
 
-### Build OpenRadioss with Visual Studio
+### Build OpenCourant with Visual Studio
 
 This sections assumes, that Intel OneAPI Compiler was successfully installed.
 Procedure was tested on Visual Studio 2022
 
 * Launch Visual Studio
 
-* Choose `Open Local Folder` option and select the OpenRadioss directory from your clone.
+* Choose `Open Local Folder` option and select the OpenCourant directory from your clone.
 
 ![image](/doc/vs_start.png)
 
@@ -762,9 +762,9 @@ Procedure was tested on Visual Studio 2022
 
 * Launch in Menu : [Build]:[Build All]
 
-* OpenRadioss binaries are copied in **OpenRadioss/exec** directory
+* OpenCourant binaries are copied in **OpenCourant/exec** directory
 
-### Build OpenRadioss with Open_Reader
+### Build OpenCourant with Open_Reader
 
 Compiler installation is same than for Starter.
 No further installation task is need.
@@ -786,14 +786,14 @@ To execute Starter with Open_Reader set PATH (for Windows) or  LD_LIBRARY (for L
 
 * On Linux
 
-      export LD_LIBRARY_PATH=[PATH to OpenRadioss clone]/exec:$LD_LIBRARY_PATH
+      export LD_LIBRARY_PATH=[PATH to OpenCourant clone]/exec:$LD_LIBRARY_PATH
 
 * On Windows
 
-      set PATH=[PATH to OpenRadioss clone]\exec:%PATH%
+      set PATH=[PATH to OpenCourant clone]\exec:%PATH%
 
 
-## How to build OpenRadioss on Linux with Container using Apptainer
+## How to build OpenCourant on Linux with Container using Apptainer
 
 ### Linux
 
@@ -803,23 +803,23 @@ Linux system with [Apptainer](https://apptainer.org/docs/admin/main/installation
 * Ubuntu 20.0.4 or higher
 * [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install): Apptainer works with WSL/WSL2 Ubuntu 20.04 LTS, WSL2 Ubuntu 22.x
 
-### Build OpenRadioss Container
+### Build OpenCourant Container
 
-* Enter the OpenRadioss/Apptainer directory
+* Enter the OpenCourant/Apptainer directory
 
-            cd OpenRadioss/Apptainer
+            cd OpenCourant/Apptainer
 
-* Build OpenRadioss container using Apptainer
+* Build OpenCourant container using Apptainer
 
             sudo apptainer build openradioss.sif openradioss.def
 
-* Copy OpenRadioss container to the directory which is in your `$PATH`
+* Copy OpenCourant container to the directory which is in your `$PATH`
 
             sudo cp openradioss.sif /usr/local/bin
 
 ## Notes on third party libraries
 
-OpenRadioss Starter and Engine use third party libraries in build process.
+OpenCourant Starter and Engine use third party libraries in build process.
 Those third party libraries are stored in [OpenCourant/extlib](https://github.com/OpenCourant/extlib) repository.
 
 During compilation process, the needed "Release asset" is downloaded and installed if not already in the repository.

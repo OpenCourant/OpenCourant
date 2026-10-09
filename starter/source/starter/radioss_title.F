@@ -55,7 +55,7 @@ C-----------------------------------------------
          WRITE(RADVERS,'(A,A)') 'Simcenter Radioss',VERS
          LEN = LEN + 15
        ELSE
-         WRITE(RADVERS,'(A)') 'OpenRadioss Starter'
+         WRITE(RADVERS,'(A)') 'OpenCourant Starter'
          LEN = LEN_TRIM(RADVERS)
        ENDIF
  
@@ -89,7 +89,7 @@ C-----------------------------------------------
        CALL PRINTCENTER(" ",0,IOUT,0)
        CALL PRINTCENTER(BTAG,LBT,IOUT,3)
        CALL PRINTCENTER(" ",0,IOUT,1)
-       CALL PRINTCENTER("OpenRadioss Software",20,IOUT,3)
+       CALL PRINTCENTER("OpenCourant Software",20,IOUT,3)
        CALL PRINTCENTER(COPYRIGHTLINE,64,IOUT,3)
        CALL PRINTCENTER("Licensed under GNU Affero General Public License.",49,IOUT,3)
        CALL PRINTCENTER("See License file.",17,IOUT,3)

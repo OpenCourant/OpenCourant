@@ -10,7 +10,7 @@ following the MPI/OpenMP parallel flow.
 
 ## 1. Purpose
 
-OpenRadioss is an explicit finite-element solver (central-difference / leapfrog
+OpenCourant is an explicit finite-element solver (central-difference / leapfrog
 scheme). The engine reads a restart file written by the Starter and then drives a
 cycle loop over time cycles until termination. The loop computes:
 

@@ -3,7 +3,7 @@
 ## 1. Purpose and scope
 
 This document describes the **node-splitting** technique used to propagate cracks
-in the OpenRadioss engine, and — most importantly — how it keeps the
+in the OpenCourant engine, and — most importantly — how it keeps the
 **PARITH/ON** (bitwise-reproducible) force-assembly machinery consistent when new
 nodes are created at runtime.
 
@@ -13,7 +13,7 @@ a brand-new node `N'`. The two nodes occupy the same position at the split cycle
 but are then free to separate.
 
 The hard part is doing this **without breaking `/PARITH/ON`**. With
-`IPARIT > 0`, OpenRadioss guarantees that nodal forces are summed in a
+`IPARIT > 0`, OpenCourant guarantees that nodal forces are summed in a
 fixed, domain-decomposition-independent order so that results are **bitwise
 identical regardless of the number of MPI ranks**. This is implemented with the
 *skyline* arrays `FSKY` / `ADSKY` / `IADC` / `PROCNE`. When a node is split, room

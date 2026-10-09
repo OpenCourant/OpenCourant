@@ -1,6 +1,6 @@
 # `NLOCAL_STR_` — Non-Local Damage Regularization Data Structure
 
-This document describes the `NLOCAL_STR_` derived type used by OpenRadioss to implement
+This document describes the `NLOCAL_STR_` derived type used by OpenCourant to implement
 **non-local damage regularization**, its complete field reference, its lifecycle across the
 two binaries (Starter and Engine), its interaction with the element buffer structure
 `ELBUF_TAB`, and the dedicated MPI (SPMD) communication routines.
@@ -24,7 +24,7 @@ u_nl - LEN² ∇²u_nl = u_local
 where `LEN` is the **non-local internal length** which controls the width of the
 localization band and becomes a material parameter.
 
-In OpenRadioss this equation is not solved implicitly. It is solved **dynamically within
+In OpenCourant this equation is not solved implicitly. It is solved **dynamically within
 the explicit time integration scheme**: the non-local variable is carried by **additional
 degrees of freedom** attached to the mesh nodes, given an artificial "mass" (`DENS`) and
 "damping" (`DAMP`), and integrated in time exactly like the mechanical d.o.fs

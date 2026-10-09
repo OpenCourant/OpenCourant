@@ -721,7 +721,7 @@ C-----------------------------------------------
 
          LBT = LEN_TRIM(BTAG)
          WRITE(6,'(A,A)') ' '
-         WRITE(6,'(A,A)') 'OpenRadios Engine '
+         WRITE(6,'(A,A)') 'OpenCourant Engine '
          WRITE(6,'(A,A)') ' '
          WRITE(6,'(A,A)') 'Platform release : ',BNAME(1:LENBNAM)
          WRITE(6,'(A,A)') 'Platform info : ',ARCHTITLE
