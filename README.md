@@ -2,11 +2,9 @@
 
 ## What is OpenCourant?
 
-**Simcenter(TM) Radioss(R)** is an industry-proven analysis solution that helps users evaluate and optimize product performance for highly nonlinear problems under dynamic loadings. For more than 30 years, organizations have used Simcenter Radioss to streamline and optimize the digital design process, replace costly physical tests with quick and efficient simulation, and speed up design optimization iterations.
+**OpenCourant** is an open-source explicit finite element solver for simulating crashes, impacts, explosions, and other highly nonlinear dynamic events. It is the community continuation of OpenRadioss, carrying forward a code base with decades of engineering behind it — licensed under the GNU AGPL v3 and developed, tested, and released entirely in the open.
 
-**OpenCourant** is the publicly available open-source code base that a worldwide community of researchers, software developers, and industry leaders are enhancing every day. OpenCourant is changing the game by empowering users to make rapid contributions that tackle the latest challenges brought on by rapidly evolving technologies like battery development, lightweight materials and composites, human body models and biomaterials, autonomous driving and flight, as well as the desire to give passengers the safest environment possible via virtual testing.
-
-With OpenCourant, scientists and technologists can focus their research on a stable code base under professional maintenance that benefits from the large library of existing finite element capabilities and the continuous integration and continuous development tools provided to contributors.
+The solver covers established crash and safety workflows: a large library of material laws, element formulations and contact interfaces, multiphysics capabilities such as ALE and SPH, and single- and double-precision builds for SMP and MPI execution on Linux (x86-64 and arm64) and Windows. Every release is gated on a regression suite and ships as ready-to-run packages, SIF images, and multi-arch containers.
 
 For more information on the OpenCourant project, please visit [opencourant.org](https://opencourant.org)
 
