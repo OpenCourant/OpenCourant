@@ -25,7 +25,7 @@ Have a look at the [Getting Started video on Youtube](https://www.youtube.com/wa
 
 ### Download latest OpenRadioss stable build
 
-[https://github.com/OpenRadioss/OpenRadioss/releases](https://github.com/OpenRadioss/OpenRadioss/releases)
+[https://github.com/OpenCourant/OpenCourant/releases](https://github.com/OpenCourant/OpenCourant/releases)
 
 Choose the binaries according to the operating system:
 
@@ -34,7 +34,7 @@ Choose the binaries according to the operating system:
 
 ### Download one example model
 
-OpenRadioss example models can be found on [openRadioss.org/models](https://openradioss.org/models/)
+Example models: the upstream model library went offline with openradioss.org; ask for (or share) models on the [community forum](https://github.com/orgs/OpenCourant/discussions)
 
 One Tensile Test example in LS-DYNA format can be found here: [Tensile Test LS-Dyna format](https://openradioss.atlassian.net/wiki/download/attachments/21364914/zug_test3_RS.zip?api=v2)
 

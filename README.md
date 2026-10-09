@@ -8,9 +8,9 @@
 
 With OpenRadioss, scientists and technologists can focus their research on a stable code base under professional maintenance that benefits from the large library of existing finite element capabilities and the continuous integration and continuous development tools provided to contributors.
 
-For more information on the OpenRadioss project, please visit [www.openradioss.org](https://www.openradioss.org)
+For more information on the OpenCourant project, please visit [opencourant.org](https://opencourant.org)
 
-If you have any questions about OpenRadioss, please feel free to contact <webmaster@openradioss.org>.
+If you have any questions about OpenCourant, please feel free to contact <hello@opencourant.org>.
 
 ## How to Use OpenRadioss
 
@@ -27,9 +27,8 @@ If you have any questions about OpenRadioss, please feel free to contact <webmas
 * [How to access the stable version of the code](Stable_code.md)
 * [Code of conduct](CODE_OF_CONDUCT.md)
 
-Community Manager
-Marian Bulla
-<communitymanager@openradioss.org>  
+Contact
+<hello@opencourant.org>  
 
 ## OpenRadioss GUI
 
@@ -39,14 +38,14 @@ Launch OpenRadioss using the [openradioss_gui](doc/openradioss_gui.md) tool
 
 * .rad file native Radioss format, read in Starter
 * .k, .key LS-Dyna format. Native support in Starter.
-* .inp : Abaqus and other solver. Converter with [.inp format to Radioss (.rad) format converter](https://github.com/OpenRadioss/Tools/tree/main/input_converters/inp2rad)
+* .inp : Abaqus and other solver. Converter with [.inp format to Radioss (.rad) format converter](https://github.com/OpenCourant/Tools/tree/main/input_converters/inp2rad)
 
 ## Post Processing tools
 
 Tools are available to convert Radioss formats to VTK, CSV or d3plot
 
-* [Animation files to VTK](https://github.com/OpenRadioss/Tools/tree/main/output_converters/anim_to_vtk)
-* [Time History file](https://github.com/OpenRadioss/Tools/tree/main/output_converters/th_to_csv)
+* [Animation files to VTK](https://github.com/OpenCourant/Tools/tree/main/output_converters/anim_to_vtk)
+* [Time History file](https://github.com/OpenCourant/Tools/tree/main/output_converters/th_to_csv)
 * Animation to d3plot converter can be found on [Vortex-CAE GitHub repository](https://github.com/Vortex-CAE/Vortex-Radioss)
 
 ## Resources
@@ -61,8 +60,9 @@ Help Documentation in pdf form:
 * [user guide](https://2022.help.altair.com/2022/simulation/pdfs/radopen/AltairRadioss_2022_UserGuide.pdf)  
 * [theory manual](https://2022.help.altair.com/2022/simulation/pdfs/radopen/AltairRadioss_2022_TheoryManual.pdf)  
 
-[![Current status](https://github.com/OpenRadioss/OpenRadioss/actions/workflows/prmerge_ci_main.yml/badge.svg)](https://github.com/OpenRadioss/OpenRadioss/actions/workflows/prmerge_ci_main.yml)
+[![Current status](https://github.com/OpenCourant/OpenCourant/actions/workflows/prmerge_ci_main.yml/badge.svg)](https://github.com/OpenCourant/OpenCourant/actions/workflows/prmerge_ci_main.yml)
 
 Help for contributors:
 
-* [OpenRadioss documentation](https://openradioss.atlassian.net/wiki/spaces/OPENRADIOSS/pages/1016047/OpenRadioss+Documentation)
+* [Developer documentation](doc/)
+* [Community forum](https://github.com/orgs/OpenCourant/discussions)

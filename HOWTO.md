@@ -297,7 +297,7 @@ Both are shipped with Visual Studio 2022.
 ### Get the source
 
 * Activate LFS: `git lfs install`
-* Run `git clone git@github.com:OpenRadioss/OpenRadioss.git`.
+* Run `git clone git@github.com:OpenCourant/OpenCourant.git`.
 
 See [here](./CONTRIBUTING.md) if you want to contribute to OpenRadioss.
 
@@ -820,6 +820,6 @@ Linux system with [Apptainer](https://apptainer.org/docs/admin/main/installation
 ## Notes on third party libraries
 
 OpenRadioss Starter and Engine use third party libraries in build process.
-Those third party libraries are stored in [OpenRadioss/OpenRadioss_extlib](https://github.com/OpenRadioss/OpenRadioss_extlib) repository.
+Those third party libraries are stored in [OpenCourant/extlib](https://github.com/OpenCourant/extlib) repository.
 
 During compilation process, the needed "Release asset" is downloaded and installed if not already in the repository.

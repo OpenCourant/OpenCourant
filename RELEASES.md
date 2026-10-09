@@ -1,6 +1,6 @@
 # Radioss Stable Releases
 
-OpenRadioss builds are available in the [Releases area on GitHub](https://github.com/OpenRadioss/OpenRadioss/releases).
+OpenRadioss builds are available in the [Releases area on GitHub](https://github.com/OpenCourant/OpenCourant/releases).
 
 * Builds are based on a git tag marking a given changelist as stable.
 * Three builds are available: they are based on the last three tags marking OpenRadioss as stable.

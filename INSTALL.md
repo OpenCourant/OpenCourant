@@ -4,8 +4,8 @@ OpenRadioss is made of:
 
 * OpenRadioss Starter that checks the model and splits the mesh
 * OpenRadioss Engine that runs the simulation in parallel
-* Few [libraries](https://github.com/OpenRadioss/OpenRadioss/tree/main/extlib)
-* A set of [configuration files](https://github.com/OpenRadioss/OpenRadioss/tree/main/hm_cfg_files) that describes the input
+* Few [libraries](https://github.com/OpenCourant/OpenCourant/tree/main/extlib)
+* A set of [configuration files](https://github.com/OpenCourant/OpenCourant/tree/main/hm_cfg_files) that describes the input
 
 ## Table of Contents
 
@@ -29,7 +29,7 @@ OpenRadioss is made of:
 
 ## Prerequisites
 
-Download and [build OpenRadioss](https://github.com/OpenRadioss/OpenRadioss/blob/main/HOWTO.md), or download the [binaries](https://github.com/OpenRadioss/OpenRadioss/releases)
+Download and [build OpenRadioss](https://github.com/OpenCourant/OpenCourant/blob/main/HOWTO.md), or download the [binaries](https://github.com/OpenCourant/OpenCourant/releases)
 
 ### Environment variables settings under Linux
 
