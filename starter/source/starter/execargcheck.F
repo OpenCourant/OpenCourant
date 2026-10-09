@@ -1199,7 +1199,7 @@ C-----------------------------------------------
 
 
          WRITE(6,'(A,A)') ' '
-         WRITE(6,'(A,A)') 'OpenRadioss Starter '
+         WRITE(6,'(A,A)') 'OpenCourant Starter '
          WRITE(6,'(A,A)') ' '
          WRITE(6,'(A,A)') 'Platform release : ',CPUNAM
          WRITE(6,'(A,A)') 'Platform info : ',ARCHTITLE

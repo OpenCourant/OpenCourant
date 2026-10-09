@@ -284,7 +284,7 @@
           write(fchecksum,"(a)") " **                                                                    **"
           write(fchecksum,"(a)") " **                                                                    **"
           write(fchecksum,"(a)") " ************************************************************************"
-          write(fchecksum,"(a)") " ** OpenRadioss Software                                               **"
+          write(fchecksum,"(a)") " ** OpenCourant Software                                               **"
           write(fchecksum,"(a)") " ** COPYRIGHT (C) 2026 Siemens                                         **"
           write(fchecksum,"(a)") " ** Licensed under GNU Affero General Public License.                  **"
           write(fchecksum,"(a)") " ** See License file.                                                  **"
