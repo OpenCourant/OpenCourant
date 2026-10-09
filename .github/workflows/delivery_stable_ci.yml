@@ -1197,7 +1197,10 @@ jobs:
             gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/$tag"
           done
 
+      # Temporarily disabled until things calm down and releases are less
+      # frequent; flip the `if` back to re-enable the announcement post.
       - name: Create a new GitHub Discussion Announcement
+        if: ${{ false }}
         continue-on-error: true
         uses: actions/github-script@v8
         env:
