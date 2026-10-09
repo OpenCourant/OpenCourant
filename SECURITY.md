@@ -1,6 +1,6 @@
 # Security
 
-The OpenRadioss community takes the security of our product seriously, including source code repositories and release assets.
+The OpenCourant community takes the security of our product seriously, including source code repositories and release assets.
 
 ## Reporting Vulnerabilities
 
@@ -15,16 +15,16 @@ When reporting, please include the following information:
 * Instructions to reproduce the issue
 * Impact of the issue, including how an attacker might exploit it
 
-Please report other bugs in the Issues section of the OpenRadioss repository.
+Please report other bugs in the Issues section of the OpenCourant repository.
 
 ## GitHub Account Recommendations
 
-**Use two-factor authentication (2FA) for your GitHub account when contributing to OpenRadioss.**
+**Use two-factor authentication (2FA) for your GitHub account when contributing to OpenCourant.**
 
 You can find further information in the GitHub documentation:  
 [Configuring two-factor authentication](https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa/configuring-two-factor-authentication)
 
-## Adding Third-Party Libraries to OpenRadioss
+## Adding Third-Party Libraries to OpenCourant
 
 Third-party libraries may introduce security issues when provided as source code and/or binaries.
 
@@ -35,4 +35,4 @@ When doing so, please indicate:
 * The source of the Third-party (website or repository)
 * The license attached to this Third-party
 
-The OpenRadioss community will investigate the feasibility of adding this Third-party to OpenRadioss. If approved, the new Third-party will be added to the `extlib` directory.
+The OpenCourant community will investigate the feasibility of adding this Third-party to OpenCourant. If approved, the new Third-party will be added to the `extlib` directory.

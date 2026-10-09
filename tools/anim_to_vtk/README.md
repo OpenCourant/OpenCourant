@@ -1,6 +1,6 @@
 # anim_to_vtk
 
-anim_to_vtk is an external tool to convert OpenRadioss animation files to legacy vtk ASCII format.
+anim_to_vtk is an external tool to convert OpenCourant animation files to legacy vtk ASCII format.
 
 ## Source Code repository
 

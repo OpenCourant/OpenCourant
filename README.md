@@ -1,27 +1,27 @@
-# OpenRadioss
+# OpenCourant
 
-## What is OpenRadioss?
+## What is OpenCourant?
 
 **Simcenter(TM) Radioss(R)** is an industry-proven analysis solution that helps users evaluate and optimize product performance for highly nonlinear problems under dynamic loadings. For more than 30 years, organizations have used Simcenter Radioss to streamline and optimize the digital design process, replace costly physical tests with quick and efficient simulation, and speed up design optimization iterations.
 
-**OpenRadioss** is the publicly available open-source code base that a worldwide community of researchers, software developers, and industry leaders are enhancing every day. OpenRadioss is changing the game by empowering users to make rapid contributions that tackle the latest challenges brought on by rapidly evolving technologies like battery development, lightweight materials and composites, human body models and biomaterials, autonomous driving and flight, as well as the desire to give passengers the safest environment possible via virtual testing.
+**OpenCourant** is the publicly available open-source code base that a worldwide community of researchers, software developers, and industry leaders are enhancing every day. OpenCourant is changing the game by empowering users to make rapid contributions that tackle the latest challenges brought on by rapidly evolving technologies like battery development, lightweight materials and composites, human body models and biomaterials, autonomous driving and flight, as well as the desire to give passengers the safest environment possible via virtual testing.
 
-With OpenRadioss, scientists and technologists can focus their research on a stable code base under professional maintenance that benefits from the large library of existing finite element capabilities and the continuous integration and continuous development tools provided to contributors.
+With OpenCourant, scientists and technologists can focus their research on a stable code base under professional maintenance that benefits from the large library of existing finite element capabilities and the continuous integration and continuous development tools provided to contributors.
 
 For more information on the OpenCourant project, please visit [opencourant.org](https://opencourant.org)
 
 If you have any questions about OpenCourant, please feel free to contact <hello@opencourant.org>.
 
-## How to Use OpenRadioss
+## How to Use OpenCourant
 
 * [Quick Start guide](doc/Getting_started.md)
-* [How to Build OpenRadioss](HOWTO.md)
-* [How to Run OpenRadioss](INSTALL.md)
-* [OpenRadioss Stable Releases](RELEASES.md)
+* [How to Build OpenCourant](HOWTO.md)
+* [How to Run OpenCourant](INSTALL.md)
+* [OpenCourant Stable Releases](RELEASES.md)
 
 ## Community and Ways to Participate
 
-`git` and `git-lfs` are needed to clone the OpenRadioss repository.
+`git` and `git-lfs` are needed to clone the OpenCourant repository.
 
 * [How to contribute](CONTRIBUTING.md)
 * [How to access the stable version of the code](Stable_code.md)
@@ -30,9 +30,9 @@ If you have any questions about OpenCourant, please feel free to contact <hello@
 Contact
 <hello@opencourant.org>  
 
-## OpenRadioss GUI
+## OpenCourant GUI
 
-Launch OpenRadioss using the [openradioss_gui](doc/openradioss_gui.md) tool
+Launch OpenCourant using the [openradioss_gui](doc/openradioss_gui.md) tool
 
 ## Input Deck Support
 

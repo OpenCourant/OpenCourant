@@ -1,4 +1,4 @@
-# SPMD / MPI Parallelism in OpenRadioss
+# SPMD / MPI Parallelism in OpenCourant
 
 This document covers the MPI layer: how the mesh is decomposed, how boundary nodes
 are represented, how nodal forces are exchanged across domains each cycle, and how
@@ -9,7 +9,7 @@ the two parallelism modes (Parith/OFF and Parith/ON) differ. It also maps the
 
 ## 1. Overview
 
-OpenRadioss uses a **hybrid MPI + OpenMP** model:
+OpenCourant uses a **hybrid MPI + OpenMP** model:
 
 - **MPI** decomposes the mesh spatially into `NSPMD` domains. Each domain is an
   independent OS process. MPI rank 0-based index of this domain is `ISPMD`.
@@ -19,7 +19,7 @@ The Starter writes one restart file (`_NNNN.rst`) per MPI domain. The Engine rea
 these files and runs independently, exchanging only boundary ("frontier") node data
 through MPI calls once per time cycle.
 
-All MPI calls in OpenRadioss go through the wrapper module `SPMD_MOD`
+All MPI calls in OpenCourant go through the wrapper module `SPMD_MOD`
 (`engine/source/mpi/spmd_mod.F90`). Never call `MPI_*` directly; always use
 `spmd_send`, `spmd_recv`, `spmd_isend`, etc. The `#ifndef MPI` guard provides
 no-op stubs for single-process builds.
@@ -151,7 +151,7 @@ after a node split (see `doc/NODE_SPLITING.md`).
 **File:** `engine/source/mpi/spmd_mod.F90`
 
 `SPMD_MOD` is an umbrella module that re-exports all low-level MPI primitives.
-All other OpenRadioss routines import from `SPMD_MOD`, never from the underlying
+All other OpenCourant routines import from `SPMD_MOD`, never from the underlying
 modules directly. The module also defines `SPMD_REAL8` (1 if double precision,
 0 if single) and MPI sentinel constants.
 

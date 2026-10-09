@@ -5,13 +5,13 @@ Completed on 2026-09-20 using double precision on Windows x64.
 The bounded-return update was verified on 2026-09-24 and rerun with the
 parameter/restart validation fixes on 2026-09-28, using material-point and
 actual SDK-adapter tests. Historical solver results in this document
-belong to the pre-fix source; neither OpenRadioss Engine nor LS-DYNA was
+belong to the pre-fix source; neither OpenCourant Engine nor LS-DYNA was
 rerun for these robustness and validation updates.
 
 | Component | Version |
 |---|---|
-| OpenRadioss source baseline | `15b9676622666f3dca2a65cd50a5a8e5cce11c70` |
-| OpenRadioss/Tools SDK | `4e52942e191d3b1ede4b320fb0f1780f4e41b59a` |
+| OpenCourant source baseline | `15b9676622666f3dca2a65cd50a5a8e5cce11c70` |
+| OpenCourant/Tools SDK | `4e52942e191d3b1ede4b320fb0f1780f4e41b59a` |
 | Starter / Engine / history converter | Official `latest-20260728` Windows release |
 | User library compiler | GNU Fortran 8.3.0, GNU GCC / ar from the same toolchain |
 | Parallel execution | One Engine thread |
@@ -159,7 +159,7 @@ were also rebuilt successfully. No solver or restart-file round trip was
 run; restart validation here exercises restored history arrays through
 the material interface.
 
-## Native OpenRadioss verification: 10 cases passed
+## Native OpenCourant verification: 10 cases passed
 
 `tests/run_solver.py` generates a 10 mm cube using one solid integration
 point. Every nodal translation is prescribed; these tests isolate the
@@ -207,7 +207,7 @@ SMP double precision (I8R8). Nineteen paired one-brick cases, 38 runs,
 terminated normally. The R13 bridge separately passed 100 direct-core
 interface updates; its vector entry was exercised by a shear case.
 These are comparisons of the material core within LS-DYNA, not additional
-cross-solver checks of the OpenRadioss adapter.
+cross-solver checks of the OpenCourant adapter.
 
 Both sides used the same explicit SI parameters and prescribed affine nodal
 motion. The cases cover elastic response, partial/full compaction, constrained

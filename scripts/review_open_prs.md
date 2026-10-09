@@ -1,4 +1,4 @@
-# OpenRadioss PR reviewer
+# OpenCourant PR reviewer
 
 `review_open_prs.py` reviews eligible GitHub pull requests with Copilot CLI. It
 uses complete local Git diffs, lets Copilot inspect the exact PR checkout, and
@@ -6,10 +6,10 @@ publishes only a validated review summary.
 
 ## Requirements
 
-- Run from an OpenRadioss Git checkout. Review commits are fetched directly
+- Run from an OpenCourant Git checkout. Review commits are fetched directly
   from `https://github.com/OpenCourant/OpenCourant.git`; no remote name is
   required.
-- Authenticate `gh` for `OpenRadioss/OpenRadioss`.
+- Authenticate `gh` for `OpenCourant/OpenCourant`.
 - Authenticate Copilot CLI separately, or set `COPILOT_GITHUB_TOKEN`.
 - Keep the tracked working tree clean. Changes to this reviewer and its test
   file are allowed while developing the tool.
@@ -50,7 +50,7 @@ accidental batch publication.
 
 ## GitHub Actions handoff
 
-The script is intentionally fixed to `OpenRadioss/OpenRadioss`. DevOps does not
+The script is intentionally fixed to `OpenCourant/OpenCourant`. DevOps does not
 need to pass a repository name, configure an `upstream` remote, or extract the
 PR number for normal PR events.
 
@@ -184,7 +184,7 @@ intermediate results are appended to the report as they finish.
 `fetching recorded base revision` or `fetching exact head revision`
 
 : The script is reading immutable review endpoints directly from
-  `OpenRadioss/OpenRadioss`. Check network access to GitHub and confirm that the
+  `OpenCourant/OpenCourant`. Check network access to GitHub and confirm that the
   PR still exists.
 
 `still running after ...`

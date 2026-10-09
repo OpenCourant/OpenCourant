@@ -1,6 +1,6 @@
 # th_to_csv
 
-th_to_csv is an external tool to convert OpenRadioss time history files to CSV format.
+th_to_csv is an external tool to convert OpenCourant time history files to CSV format.
 
 ## Source Code repository
 

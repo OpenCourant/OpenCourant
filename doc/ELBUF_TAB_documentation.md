@@ -1,7 +1,7 @@
 # `ELBUF_STRUCT_` — Element Buffer Data Structure
 
 This document describes the `ELBUF_STRUCT_` derived type and the `ELBUF_TAB` array
-that is passed through most of the element kernel in OpenRadioss. It covers the type
+that is passed through most of the element kernel in OpenCourant. It covers the type
 hierarchy, the meaning of each sub-structure, the addressing scheme, the lifecycle
 from Starter to Engine, and how element routines access the buffer.
 

@@ -1,9 +1,9 @@
-# How to run OpenRadioss
+# How to run OpenCourant
 
-OpenRadioss is made of:
+OpenCourant is made of:
 
-* OpenRadioss Starter that checks the model and splits the mesh
-* OpenRadioss Engine that runs the simulation in parallel
+* OpenCourant Starter that checks the model and splits the mesh
+* OpenCourant Engine that runs the simulation in parallel
 * Few [libraries](https://github.com/OpenCourant/OpenCourant/tree/main/extlib)
 * A set of [configuration files](https://github.com/OpenCourant/OpenCourant/tree/main/hm_cfg_files) that describes the input
 
@@ -15,47 +15,47 @@ OpenRadioss is made of:
 * [Environment variables settings under Windows cmd shell](#environment-variables-settings-under-windows-cmd-shell)
 * [Environment variables settings under Windows cygwin shell](#environment-variables-settings-under-windows-cygwin-shell)
  
-**Running OpenRadioss**
+**Running OpenCourant**
 
-* [Running OpenRadioss without MPI (OpenMP only)](#running-openradioss-without-mpi)
-* [Running OpenRadioss with MPI+OpenMP](#running-openradioss-with-mpi-and-openmp)
+* [Running OpenCourant without MPI (OpenMP only)](#running-openradioss-without-mpi)
+* [Running OpenCourant with MPI+OpenMP](#running-openradioss-with-mpi-and-openmp)
     * [Under Linux](#under-linux)
     * [Under Windows in cmd.exe shell](#under-windows-in-cmd-shell)
-    * [Running OpenRadioss container using Apptainer under Linux](#running-openradioss-container-using-apptainer-under-linux)
-    * [Running OpenRadioss container without MPI (OpenMP only)](#running-openradioss-container-without-mpi) 
-* [Running OpenRadioss test suite from the source code](#running-openradioss-test-suite-from-the-source-code)
-* [Debugging OpenRadioss with Visual Studio](./doc/Visual_Studio_Debugger.md)
+    * [Running OpenCourant container using Apptainer under Linux](#running-openradioss-container-using-apptainer-under-linux)
+    * [Running OpenCourant container without MPI (OpenMP only)](#running-openradioss-container-without-mpi) 
+* [Running OpenCourant test suite from the source code](#running-openradioss-test-suite-from-the-source-code)
+* [Debugging OpenCourant with Visual Studio](./doc/Visual_Studio_Debugger.md)
 
 
 ## Prerequisites
 
-Download and [build OpenRadioss](https://github.com/OpenCourant/OpenCourant/blob/main/HOWTO.md), or download the [binaries](https://github.com/OpenCourant/OpenCourant/releases)
+Download and [build OpenCourant](https://github.com/OpenCourant/OpenCourant/blob/main/HOWTO.md), or download the [binaries](https://github.com/OpenCourant/OpenCourant/releases)
 
 ### Environment variables settings under Linux
 
 Set the following environment variables:
 
-        export OPENRADIOSS_PATH=[Path to OpenRadioss root directory]
-        export RAD_CFG_PATH=$OPENRADIOSS_PATH/hm_cfg_files
-        export RAD_H3D_PATH=$OPENRADIOSS_PATH/extlib/h3d/lib/linux64
+        export OPENCOURANT_PATH=[Path to OpenCourant root directory]
+        export RAD_CFG_PATH=$OPENCOURANT_PATH/hm_cfg_files
+        export RAD_H3D_PATH=$OPENCOURANT_PATH/extlib/h3d/lib/linux64
         export OMP_STACKSIZE=400m
-        export LD_LIBRARY_PATH=$OPENRADIOSS_PATH/extlib/hm_reader/linux64/:$LD_LIBRARY_PATH
+        export LD_LIBRARY_PATH=$OPENCOURANT_PATH/extlib/hm_reader/linux64/:$LD_LIBRARY_PATH
 
 ### Environment variables settings under Windows cmd shell
 
 Set the following environment variables:
 
-        set OPENRADIOSS_PATH=[Path to OpenRadioss root directory / Windows Style]
-        set RAD_CFG_PATH=%OPENRADIOSS_PATH%\hm_cfg_files
-        set RAD_H3D_PATH=%OPENRADIOSS_PATH%\extlib\h3d\lib\win64
+        set OPENCOURANT_PATH=[Path to OpenCourant root directory / Windows Style]
+        set RAD_CFG_PATH=%OPENCOURANT_PATH%\hm_cfg_files
+        set RAD_H3D_PATH=%OPENCOURANT_PATH%\extlib\h3d\lib\win64
         set KMP_STACKSIZE=400m
-        set PATH=%OPENRADIOSS_PATH%\extlib\hm_reader\win64;%PATH% 
+        set PATH=%OPENCOURANT_PATH%\extlib\hm_reader\win64;%PATH% 
 
-* If OpenRadioss was downloaded from GitHub Releases, add Intel Runtime libraries shipped in the Package to PATH:
+* If OpenCourant was downloaded from GitHub Releases, add Intel Runtime libraries shipped in the Package to PATH:
 
-        set PATH=%OPENRADIOSS_PATH%\extlib\intelOneAPI_runtime\win64;%PATH%
+        set PATH=%OPENCOURANT_PATH%\extlib\intelOneAPI_runtime\win64;%PATH%
 
-*  If OpenRadioss was built from the Source code, use the Intel Runtime from the used compiler.
+*  If OpenCourant was built from the Source code, use the Intel Runtime from the used compiler.
    The Intel oneAPI compiler installed and used for building the binaries could be more recent than the one used for building the Releases.
    In this case the Runtimes may not be compatible.
 
@@ -65,33 +65,33 @@ Set the following environment variables:
 
 ### Environment variables settings under Windows Cygwin shell
 
-* If OpenRadioss was built from source code, load the Intel oneAPI variables prior to launch Cygwin. This will load the appropriate
+* If OpenCourant was built from source code, load the Intel oneAPI variables prior to launch Cygwin. This will load the appropriate
   Runtime libraries.
 
         call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat" intel64 vs2019
         chdir C:\cygwin64\bin
         bash --login -i
 
-* If OpenRadioss was downloaded from GitHub Releases, 
+* If OpenCourant was downloaded from GitHub Releases, 
  
-Cygwin is translating `PATH` variable into DOS path to execute OpenRadioss, but not other variables.
-Considering that the OpenRadioss directory is placed in `C:\OpenRadioss`, then variables should be:
+Cygwin is translating `PATH` variable into DOS path to execute OpenCourant, but not other variables.
+Considering that the OpenCourant directory is placed in `C:\OpenCourant`, then variables should be:
 
-        export OPENRADIOSS_PATH=/cygdrive/c/OpenRadioss
-        export PATH=$OPENRADIOSS_PATH/extlib/hm_reader/win64:$OPENRADIOSS_PATH/extlib/h3d/lib/win64:$PATH
-        export PATH=$OPENRADIOSS_PATH/extlib/intelOneAPI_runtime/win64:$PATH
-        export RAD_CFG_PATH=c:/OpenRadioss/hm_cfg_files
-        export RAD_H3D_PATH=c:/OpenRadioss/extlib/h3d/lib/win64
+        export OPENCOURANT_PATH=/cygdrive/c/OpenCourant
+        export PATH=$OPENCOURANT_PATH/extlib/hm_reader/win64:$OPENCOURANT_PATH/extlib/h3d/lib/win64:$PATH
+        export PATH=$OPENCOURANT_PATH/extlib/intelOneAPI_runtime/win64:$PATH
+        export RAD_CFG_PATH=c:/OpenCourant/hm_cfg_files
+        export RAD_H3D_PATH=c:/OpenCourant/extlib/h3d/lib/win64
         export KMP_STACKSIZE=400m
 
 
 Note that variables `RAD_CFG_PATH` and `RAD_H3D_PATH` start with `c:` unlike the `PATH` that starts with `/cygdrive/c`.
 
 
-## Running OpenRadioss
+## Running OpenCourant
 
 
-### Running OpenRadioss without MPI
+### Running OpenCourant without MPI
 
 * Define number of OpenMP threads
 
@@ -103,7 +103,7 @@ Note that variables `RAD_CFG_PATH` and `RAD_H3D_PATH` start with `c:` unlike the
 
          set OMP_NUM_THREADS=[N]
 
-* Run OpenRadioss Starter and Engine from the directory that contains the binaries
+* Run OpenCourant Starter and Engine from the directory that contains the binaries
 
    * **Under Linux**
 
@@ -116,7 +116,7 @@ Note that variables `RAD_CFG_PATH` and `RAD_H3D_PATH` start with `c:` unlike the
         engine_win64.exe  -i [Engine input file]
 
 
-### Running OpenRadioss with MPI and OpenMP
+### Running OpenCourant with MPI and OpenMP
 
 #### Under Linux 
 
@@ -125,7 +125,7 @@ Note that variables `RAD_CFG_PATH` and `RAD_H3D_PATH` start with `c:` unlike the
         export LD_LIBRARY_PATH=/opt/openmpi/lib:$LD_LIBRARY_PATH
         export PATH=/opt/openmpi/bin:$PATH
 
-* Run OpenRadioss with P MPI processes and N threads per domain from the directory that contains the binaries
+* Run OpenCourant with P MPI processes and N threads per domain from the directory that contains the binaries
 
         export OMP_STACKSIZE=400m
         export OMP_NUM_THREADS=[N]
@@ -205,13 +205,13 @@ the OpenMPI runtime is included, and all environment variables are preset.
         apptainer exec opencourant.sif starter -i [Starter input file] -np [P]
         apptainer exec opencourant.sif mpiexec --map-by socket:PE=$OMP_NUM_THREADS --bind-to core -np [P] engine_ompi -i [Engine input file]
 
-## Running OpenRadioss test suite from the source code
+## Running OpenCourant test suite from the source code
 
 ### Under Linux
 
 * Go to the `qa_test/scripts` directory
 
-        cd $OPENRADIOSS_PATH/qa-tests/scripts
+        cd $OPENCOURANT_PATH/qa-tests/scripts
 
 #### Running without MPI (OpenMP only)
 
@@ -236,7 +236,7 @@ Set the variables like running under Cygwin.
 
 * Go to the `qa_test/scripts` directory
 
-        cd $OPENRADIOSS_PATH/qa-tests/scripts
+        cd $OPENCOURANT_PATH/qa-tests/scripts
 
 #### Running without MPI
 

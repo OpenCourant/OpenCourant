@@ -1,7 +1,7 @@
 # RHT solid user material
 
 This tool implements the published three-surface Riedel-Hiermaier-Thoma
-concrete model as an OpenRadioss `/MAT/USER01` solid material. It supplies
+concrete model as an OpenCourant `/MAT/USER01` solid material. It supplies
 the Starter reader, Engine update, a standalone material module, and
 reproducible tests. Build it against the official
 [user library SDK](https://github.com/OpenCourant/Tools/tree/main/userlib_sdk)
@@ -93,7 +93,7 @@ GNU compiler for the SDK modules and the user library. Python 3.8 or newer,
 CMake, Ninja, GCC, gfortran, and GNU `ar` are required. The Python scripts
 use only the standard library.
 
-Run the following from the OpenRadioss repository root, with the compiler
+Run the following from the OpenCourant repository root, with the compiler
 tools on `PATH`. All output goes into `cbuild_rht`, which is ignored by the
 repository. On Windows, use the `ar.exe` belonging to the GNU compiler;
 an unrelated archiver on `PATH` will not work.
@@ -126,7 +126,7 @@ archived package)
 contains Starter, Engine and `th_to_csv_win64.exe`. Then run:
 
 ```text
-python tools/rht_user_material/tests/run_solver.py --radioss-root cbuild_rht/runtime/OpenRadioss --library cbuild_rht/library/libraduser_win64.dll --output cbuild_rht/solver_runs
+python tools/rht_user_material/tests/run_solver.py --radioss-root cbuild_rht/runtime/OpenCourant --library cbuild_rht/library/libraduser_win64.dll --output cbuild_rht/solver_runs
 ```
 
 The runner creates ten one-brick decks, invokes Starter and Engine, converts

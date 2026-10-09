@@ -1,4 +1,4 @@
-# How to Use Visual Studio Debugger with OpenRadioss 
+# How to Use Visual Studio Debugger with OpenCourant 
 
 ## Prerequisites
 
@@ -21,11 +21,11 @@ For the SMP directories:
 
 * Starter 
 
-      [OpenRadioss Root]\vs_build_win64\Starter_x64-Debug\starter
+      [OpenCourant Root]\vs_build_win64\Starter_x64-Debug\starter
 
 * Engine 
 
-      [OpenRadioss Root]\vs_build_win64\Starter_x64-Debug\engine
+      [OpenCourant Root]\vs_build_win64\Starter_x64-Debug\engine
 
 ## Add the directory to the pdb files in the Debugging section from the Options Menus
 
@@ -37,8 +37,8 @@ Options can be found in [Tools][Options]
 Search Debugging in the list & choose Symbols:
 
 The Pdb symbol files can be found when building the Debugging versions on:
-* [OpenRadiossRoot]\vs_build_win64\Starter_x64-Debug\starter
-* [OpenRadiossRoot]\vs_build_win64\Engine_x64-Debug\engine
+* [OpenCourantRoot]\vs_build_win64\Starter_x64-Debug\starter
+* [OpenCourantRoot]\vs_build_win64\Engine_x64-Debug\engine
 
 You can add the .pdb files by clicking on the '+' icon.
 
@@ -72,7 +72,7 @@ Add an entry with:
 * execution arguments: "args"
 * A title: "name"
 
-This will permit to launch the OpenRadioss deck with the debugger.
+This will permit to launch the OpenCourant deck with the debugger.
 
 Here are templates for Starter & Engine: 
 

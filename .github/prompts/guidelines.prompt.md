@@ -1,12 +1,12 @@
 ---
 agent: agent
 model: Claude Sonnet 4.5
-description: Guidelines and coding style for Fortran code in OpenRadioss
+description: Guidelines and coding style for Fortran code in OpenCourant
 ---
 
-# OpenRadioss Fortran Coding Guidelines
+# OpenCourant Fortran Coding Guidelines
 
-Review the current file for adherence to OpenRadioss coding standards and suggest improvements.
+Review the current file for adherence to OpenCourant coding standards and suggest improvements.
 
 ## File Types and Formats
 

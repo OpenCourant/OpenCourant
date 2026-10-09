@@ -1,6 +1,6 @@
-# OpenRadioss Element mockup
+# OpenCourant Element mockup
 
-Simplified mockup for ELEMENT computation extracted from OpenRadioss
+Simplified mockup for ELEMENT computation extracted from OpenCourant
 
 ## How to build
 

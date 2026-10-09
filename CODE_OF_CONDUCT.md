@@ -1,8 +1,8 @@
-#### OpenRadioss Open Source Project 
+#### OpenCourant Open Source Project 
 
 ## **Code of Conduct**
 
-This code of conduct is a guide for members of the OpenRadioss community. We are committed to providing an open and welcoming environment for the OpenRadioss community.  We expect that all members of the community will behave according to this code of conduct.  This code of conduct is intended to explain the spirit in which we expect to communicate, not to be an exhaustive list.  This code of conduct applies to all elements of the OpenRadioss community: mailing lists, bug tracking systems, etc.  Anyone who violates this code of conduct may be banned from the OpenRadioss community.  It is unacceptable to follow the letter but not the spirit of this code of conduct.
+This code of conduct is a guide for members of the OpenCourant community. We are committed to providing an open and welcoming environment for the OpenCourant community.  We expect that all members of the community will behave according to this code of conduct.  This code of conduct is intended to explain the spirit in which we expect to communicate, not to be an exhaustive list.  This code of conduct applies to all elements of the OpenCourant community: mailing lists, bug tracking systems, etc.  Anyone who violates this code of conduct may be banned from the OpenCourant community.  It is unacceptable to follow the letter but not the spirit of this code of conduct.
 
 Guidelines for code of conduct:
 
@@ -12,7 +12,7 @@ Guidelines for code of conduct:
 * **Be respectful:** Disagreements may occur, but we cannot abide personal attacks. The health of the community depends on all members feeling comfortable and supported. If you don't agree, use discretion and be polite.
 * **Be careful in the words that we choose:** we are a community of professionals, and we conduct ourselves professionally. Be kind to others. Do not insult or put down other participants. Harassment and other exclusionary behavior aren’t acceptable.
 * **Try to understand why we disagree:** Disagreements, both social and technical, happen all the time. It is important that we resolve disagreements and differing views constructively. Different people have different perspectives on issues. Being unable to understand why someone holds a viewpoint doesn’t mean that they’re wrong. Don’t forget that it is human to err and blaming each other doesn’t get us anywhere. Instead, focus on helping to resolve issues and learning from mistakes.
- <!--In addition, our open source community members are expected to abide by the **[OpenRadioss Acceptable Use Policy]()-->.
+ <!--In addition, our open source community members are expected to abide by the **[OpenCourant Acceptable Use Policy]()-->.
 
 ### Reporting Issues
 If you experience or witness unacceptable behavior — or have any other concerns — please report it by sending e-mail to hello@opencourant.org. All reports will be handled with discretion. In your report please include:
