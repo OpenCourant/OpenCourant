@@ -1169,7 +1169,7 @@ jobs:
             echo ""
             echo "**Notes**"
             echo "- The Linux \`_ompi\` Engines require OpenMPI 4.1.2 installed in \`/opt/openmpi\` (see INSTALL.md); the SMP Engines run standalone"
-            echo "- \`/ALE/STRUCTURED_MESH\` is not supported by the recovered input readers and is rejected explicitly"
+            echo "- \`/ALE/STRUCTURED_MESH\` is rejected explicitly: the feature is non-functional in the shipped input readers (generates degenerate meshes), so an explicit error beats silently wrong results"
             echo ""
             echo "Thank you for using OpenCourant! 👉 [Share your feedback on the OpenCourant forum](https://github.com/orgs/${{ github.repository_owner }}/discussions)"
           } > release_body.md
