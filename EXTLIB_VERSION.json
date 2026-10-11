@@ -2,8 +2,9 @@
   "version": "82",
   "delivery_date": "2026-09-22",
   "bundled": false,
-  "source": "https://github.com/OpenCourant/extlib/tree/upstream-v82",
-  "revision": "f2fa2cd00dd5937d96e521f163a191f2dee90148",
+  "source": "official upstream extlib v82, recovered from a community-donated source checkout",
+  "archived_at": "https://github.com/OpenCourant/extlib/releases/tag/upstream-v82-extlib",
+  "git_history": "https://github.com/OpenCourant/extlib/tree/upstream-v82",
   "required_files": [
     "h3d/includes/h3dpublic_defs.h",
     "h3d/includes/h3dpublic_export.h",
@@ -19,62 +20,16 @@
     "hm_reader/win64/hm_reader_win64.lib"
   ],
   "reader_components": {
-    "linux64": {
-      "source": "community-archived original upstream extlib v70 package",
-      "original_package": "https://github.com/OpenRadioss/OpenRadioss_extlib/releases/download/v70/extlib.zip",
-      "original_package_sha256": "93a6301baf9a116ac3ba10dc212b5c38dd3e6a88319d1d6aecbec8d68f3c449b",
-      "archived_at": "https://github.com/OpenCourant/extlib/releases/tag/upstream-v70",
-      "original_release": "latest-20260728",
-      "build_id": "20260710_d899773e",
-      "effective_extlib_era": "v70",
-      "reader_sha256": "8df18883dc50bb29295f87c669d7ede95c8bc3de856c402c2daa741f272d1676",
-      "apr_sha256": "f76d9796e59b675cb374fc3f3403f7878bdcb348e4c6f8af017c3dc3046be89c",
-      "notices": "extlib/hm_reader/linux64/notices",
-      "missing_symbols": [
-        "cpp_get_include_file_by_index"
-      ],
-      "unsupported_keywords": [
-        "/ALE/STRUCTURED_MESH"
-      ],
-      "structured_ale_note": "cpp_sale_mesh_create is exported by this reader but remains disabled: no QA reference exists and a win64 trial with the same build produced invalid node coordinates"
-    },
-    "linuxa64": {
-      "source": "community-archived official OpenRadioss_linuxa64.zip release package",
-      "original_package_sha256": "e4f4347498cbebaab90118fe61daafbb7d60fb6f3f54495cba61065ae41abe32",
-      "archived_at": "https://github.com/OpenCourant/extlib/releases/tag/upstream-latest-20260728-linuxa64",
-      "original_release": "latest-20260728",
-      "build_id": "20260710_d899773e",
-      "effective_extlib_era": "v70",
-      "reader_sha256": "286c074dcf3ee4beacf4e6c854d3715b20371db871998e42bc7fdd3622c51fa2",
-      "apr_sha256": "36a13bb6a416b5c47247aee49f1d820e0353511c095132970688c6bba6355902",
-      "notices": "extlib/hm_reader/linuxa64/notices",
-      "missing_symbols": [
-        "cpp_get_include_file_by_index"
-      ],
-      "unsupported_keywords": [
-        "/ALE/STRUCTURED_MESH"
-      ],
-      "structured_ale_note": "cpp_sale_mesh_create is exported by this reader but remains disabled: no QA reference exists and a win64 trial with the same build produced invalid node coordinates"
-    },
-    "win64": {
-      "source": "https://github.com/OpenRadioss/OpenRadioss/releases/tag/latest-20260728",
-      "archive": "OpenRadioss_win64.zip",
-      "archive_sha256": "04dfecb0bf26ce071132cda86dc6861417c6a4127a389befe82b8c97341b3268",
-      "build_id": "20260710_d899773e",
-      "effective_extlib_era": "v70",
-      "reader_sha256": "ee7279ed3f5271217a8420358bbea69043470a08a6a9e641ba574f3b5d304eac",
-      "import_library_sha256": "ad39c2e0b7b91de0eaf561102e8ea9ffd522423dc6e84fb28f75e5e2d69df97e",
-      "notices": "extlib/hm_reader/win64/notices",
-      "missing_symbols": [
-        "cpp_get_include_file_by_index"
-      ],
-      "compatibility_build_unsupported_keywords": [
-        "/ALE/STRUCTURED_MESH"
-      ]
+    "all_platforms": {
+      "build_id": "20260918_f907fe76",
+      "effective_extlib_era": "v82",
+      "missing_symbols": [],
+      "notes": "pristine upstream package; readers match the Starter with no compatibility fallbacks",
+      "linux64_reader_sha256": "5c9c46b12a155853598970f7668b1cc29f654be3d0066de6db4f574789331afb"
     }
   },
-  "package_tag": "v82-hybrid-r4",
-  "package_date": "2026-10-06",
-  "url": "https://github.com/OpenCourant/extlib/releases/download/v82-hybrid-r4/extlib.zip",
-  "sha256": "793dd685ee32019c83e8591d23ed0102d8256a89169c257ad28f62f3d9d3e984"
+  "package_tag": "upstream-v82-extlib",
+  "package_date": "2026-10-11",
+  "url": "https://github.com/OpenCourant/extlib/releases/download/upstream-v82-extlib/extlib.zip",
+  "sha256": "2d0365018e67dd4813e6a2cf2ebf19d00d4771aa1aeb9b9706b7ea45fbb56982"
 }

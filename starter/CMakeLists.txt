@@ -5,13 +5,12 @@
 cmake_minimum_required (VERSION 3.15)
 project (Radioss_Starter)
 
-# The recovered v70 hm_reader binaries (build 20260710_d899773e, see
-# reader_components in EXTLIB_VERSION.json) lack
-# cpp_get_include_file_by_index (added upstream around extlib v76), so the
-# legacy include listing defaults to ON. Set it to OFF only with a reader
-# from extlib v76 or later.
+# The v82 readers (build 20260918_f907fe76, see reader_components in
+# EXTLIB_VERSION.json) provide the full selection API; the legacy
+# compatibility fallbacks below default OFF. Enable them when building
+# against an older recovered reader (v70 era or earlier).
 option(HM_READER_LEGACY_INCLUDE_API
-       "Enumerate model includes through the legacy reader selection API" ON)
+       "Enumerate model includes through the legacy reader selection API" OFF)
 if(HM_READER_LEGACY_INCLUDE_API)
    set_property(SOURCE source/devtools/hm_reader/write_include_files_list.F90
                 APPEND PROPERTY COMPILE_DEFINITIONS HM_READER_LEGACY_INCLUDE_API)
