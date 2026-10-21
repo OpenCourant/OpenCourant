@@ -93,6 +93,8 @@ When you modify a file, its header must carry the modification notice with a yea
 python3 scripts/copyright/check_headers.py --changed origin/main --fix
 ```
 
+This needs the `openradioss-final` tag, which marks the fork point and is how the tool tells the three forms apart. A normal clone has it; if yours does not (an old fork, or a shallow checkout), run `git fetch upstream tag openradioss-final` first, otherwise the tool only checks the shape of a header and will not add a missing modification notice.
+
 CI rejects pull requests with missing or stale notices. Optionally, install the commit hook so headers are repaired automatically at commit time:
 
 ```bash

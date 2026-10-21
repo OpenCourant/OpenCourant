@@ -37,11 +37,14 @@ jobs:
       - uses: actions/checkout@v6
         with:
           # Full history: the checker validates headers against the
-          # openradioss-final tag.
+          # openradioss-final tag, which fetch-tags makes explicit.
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Check all headers
-        run: python3 scripts/copyright/check_headers.py --all
+        run: >
+          python3 scripts/copyright/check_headers.py --all
+          --require-fork-point
 
   build_linux:
     if: ${{ github.repository_owner == 'OpenCourant' }}

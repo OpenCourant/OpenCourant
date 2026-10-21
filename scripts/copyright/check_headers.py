@@ -35,11 +35,20 @@ file carries exactly one of three header variants (see COPYRIGHT.md):
   new       OpenCourant notice + pointer (no Siemens block).  Required
             for files that have no pre-fork ancestor.
 
+Telling the three apart needs the `openradioss-final` tag: it is what says
+whether a file has a pre-fork ancestor and whether its content has moved
+since.  Without the tag only the shape of a header can be checked, which
+silently lets a changed legacy file keep its `legacy` notice.  CI therefore
+passes --require-fork-point so a missing tag is a hard error rather than a
+warning.
+
 Usage:
   check_headers.py --all                    validate every tracked file
   check_headers.py --changed BASE           validate files changed vs BASE
   check_headers.py [--all|--changed BASE|paths...] --fix
                                             repair what can be repaired
+  check_headers.py ... --require-fork-point fail if the fork-point tag is
+                                            missing instead of degrading
 
 Exits non-zero if problems are found (and not fixed).
 """
@@ -446,6 +455,10 @@ def main():
                          "(enforces current-year modification notices)")
     ap.add_argument("--fix", action="store_true",
                     help="repair reported problems in place")
+    ap.add_argument("--require-fork-point", action="store_true",
+                    help="fail if the %s tag is missing instead of "
+                         "silently skipping the git-consistency checks"
+                         % FORK_POINT_TAG)
     ap.add_argument("paths", nargs="*", help="explicit files to check")
     args = ap.parse_args()
 
@@ -457,6 +470,12 @@ def main():
 
     tag_files = tag_file_set()
     if tag_files is None:
+        if args.require_fork_point:
+            print("ERROR: tag %r not found, so legacy/modified/new cannot be "
+                  "told apart.  Fetch tags (actions/checkout: fetch-depth: 0 "
+                  "and fetch-tags: true) or 'git fetch origin tag %s'."
+                  % (FORK_POINT_TAG, FORK_POINT_TAG), file=sys.stderr)
+            sys.exit(1)
         print("WARNING: tag %r not found; skipping git-consistency checks"
               % FORK_POINT_TAG, file=sys.stderr)
 

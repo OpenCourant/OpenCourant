@@ -57,15 +57,22 @@ jobs:
         with:
           # Full history: the checker validates headers against the
           # openradioss-final tag and diffs against the base branch.
+          # fetch-tags is explicit because without openradioss-final the
+          # checker can only inspect header shape, not whether a changed
+          # legacy file actually gained its modification notice.
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Check all headers
-        run: python3 scripts/copyright/check_headers.py --all
+        run: >
+          python3 scripts/copyright/check_headers.py --all
+          --require-fork-point
 
       - name: Check changed files carry the modification notice
         run: >
           python3 scripts/copyright/check_headers.py
           --changed "origin/${{ github.event.pull_request.base.ref }}"
+          --require-fork-point
 
   build-for-qa:
     needs: guard
