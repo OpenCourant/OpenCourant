@@ -15,6 +15,13 @@
 //Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //Copyright>
 //Copyright>
+//Copyright>        OpenCourant
+//Copyright>        Copyright (C) 2026 OpenCourant contributors
+//Copyright>
+//Copyright>        Modified by the OpenCourant project, 2026.
+//Copyright>        Modifications are licensed under the GNU Affero General Public
+//Copyright>        License, version 3 or (at your option) any later version.
+//Copyright>
 //Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 //Copyright>        See COPYRIGHT.md at the root of the repository for the full
 //Copyright>        copyright and attribution statement.
@@ -251,14 +258,9 @@ void c_h3d_open_file_(char *name, int *size, my_real *percentage_error, int *com
 #endif
     creating_application[*LEN_RADVERS] = '\0';
 //
-    char* solver_name;
-    solver_name=(char*) malloc(sizeof(char)*(*LEN_RADVERS+1));
-#ifdef _WIN64
-    strncpy_s(solver_name, *LEN_RADVERS+1 , RADVERS, *LEN_RADVERS);
-#else
-    strncpy(solver_name, RADVERS, *LEN_RADVERS);
-#endif
-    solver_name[*LEN_RADVERS] = '\0';
+    // Post-processors key on solver_name to pick a results profile, so it
+    // stays "Radioss". The OpenCourant version goes in creating_application.
+    const char* solver_name = "Radioss";
 //
     char   file_creation_date[] = __DATE__;
     char   original_data_file[] = " ";
