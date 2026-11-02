@@ -3,8 +3,14 @@ name: Delivery stable CI
 # Release pipeline for OpenCourant. Builds the Linux x86_64 binaries in the
 # OpenCourant build image (ghcr.io/opencourant/linux64-bld-qa, from
 # https://github.com/OpenCourant/ci-images), gates them on MiniQA, packages
-# OpenCourant_linux64.zip and publishes a GitHub release on a latest-YYYYMMDD
-# tag, keeping the last 3 stable releases.
+# OpenCourant_linux64.zip and publishes a GitHub release.
+#
+# Two channels, see VERSIONING.md:
+#   release  tagged v<YYYY.N[.P]>, kept permanently, version taken from the
+#            VERSION file and verified against the requested one
+#   dev      tagged dev-YYYYMMDD-<short sha>, published as a prerelease so
+#            releases/latest and the :latest container tag keep pointing at
+#            the newest formal release, pruned to the last few
 #
 # Replaces the OpenRadioss pipeline that depended on Altair infrastructure
 # (internal registry, self-hosted runners, JFrog, private EXTRA repository,
@@ -20,8 +26,16 @@ name: Delivery stable CI
 on:
   workflow_dispatch:
     inputs:
-      tag_name:
-        description: 'Existing tag to deliver (empty: create latest-YYYYMMDD on main HEAD)'
+      channel:
+        description: 'Which channel to publish'
+        required: true
+        type: choice
+        options:
+          - dev
+          - release
+        default: dev
+      version:
+        description: 'Release version, e.g. 2026.1 (release channel only; must match the VERSION file)'
         required: false
         default: ''
 
@@ -36,53 +50,89 @@ env:
 
 jobs:
 
-  # Resolve the tag to deliver: use the given existing tag, or create
-  # latest-YYYYMMDD on the current commit.
+  # Resolve the tag to deliver. A release takes its version from the VERSION
+  # file and refuses to publish anything the file does not agree with; a dev
+  # snapshot is named after the date and commit.
   set_tag:
     if: ${{ github.repository_owner == 'OpenCourant' }}
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.resolve.outputs.tag }}
       sha: ${{ steps.resolve.outputs.sha }}
-      date: ${{ steps.resolve.outputs.date }}
+      version: ${{ steps.resolve.outputs.version }}
+      prerelease: ${{ steps.resolve.outputs.prerelease }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CHANNEL: ${{ inputs.channel }}
+      REQUESTED: ${{ inputs.version }}
     steps:
+      - uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+
       - name: Resolve or create tag
         id: resolve
         run: |
-          TAG="${{ github.event.inputs.tag_name }}"
-          if [ -z "$TAG" ]
+          set -e
+          FILE_VERSION=$(tr -d '[:space:]' < VERSION)
+
+          if [ "$CHANNEL" = "release" ]
           then
-            TAG="latest-$(date -u +%Y%m%d)"
+            if [ -z "$REQUESTED" ]
+            then
+              echo "::error::The release channel needs a version input, e.g. 2026.1"
+              exit 1
+            fi
+            TAG="v$REQUESTED"
+            PRERELEASE=false
+            VERSION="$REQUESTED"
+
             if gh api "repos/${{ github.repository }}/git/ref/tags/$TAG" > /dev/null 2>&1
             then
-              EXISTING=$(gh api "repos/${{ github.repository }}/commits/$TAG" --jq .sha)
-              if [ "$EXISTING" = "${{ github.sha }}" ]
-              then
-                echo "Tag $TAG already exists on the current commit, delivering it again"
-              else
-                echo "Tag $TAG exists on $EXISTING, moving it to the current commit ${{ github.sha }}"
-                gh api -X PATCH "repos/${{ github.repository }}/git/refs/tags/$TAG" \
-                  -f sha="${{ github.sha }}" -F force=true
-              fi
+              # Re-delivering an existing release: VERSION on the dispatched
+              # ref has usually moved on, so do not check it against the tag.
+              echo "Tag $TAG already exists, re-delivering it"
             else
+              case "$REQUESTED" in
+                *-dev)
+                  echo "::error::Refusing to release $REQUESTED: finalise VERSION first (see VERSIONING.md)"
+                  exit 1
+                  ;;
+              esac
+              if ! echo "$REQUESTED" | grep -Eq '^[0-9]{4}\.[0-9]+(\.[0-9]+)?$'
+              then
+                echo "::error::'$REQUESTED' is not a YYYY.N[.P] version"
+                exit 1
+              fi
+              if [ "$FILE_VERSION" != "$REQUESTED" ]
+              then
+                echo "::error::VERSION says '$FILE_VERSION' but '$REQUESTED' was requested. Land the version bump first."
+                exit 1
+              fi
               echo "Creating tag $TAG on ${{ github.sha }}"
               gh api -X POST "repos/${{ github.repository }}/git/refs" \
                 -f ref="refs/tags/$TAG" -f sha="${{ github.sha }}"
             fi
           else
-            if ! gh api "repos/${{ github.repository }}/git/ref/tags/$TAG" > /dev/null 2>&1
+            TAG="dev-$(date -u +%Y%m%d)-$(echo "${{ github.sha }}" | cut -c1-7)"
+            PRERELEASE=true
+            VERSION="$FILE_VERSION"
+            if gh api "repos/${{ github.repository }}/git/ref/tags/$TAG" > /dev/null 2>&1
             then
-              echo "::error::Tag $TAG does not exist. Create it first or leave the input empty."
-              exit 1
+              echo "Snapshot tag $TAG already exists, rebuilding it"
+            else
+              echo "Creating snapshot tag $TAG on ${{ github.sha }}"
+              gh api -X POST "repos/${{ github.repository }}/git/refs" \
+                -f ref="refs/tags/$TAG" -f sha="${{ github.sha }}"
             fi
           fi
+
           SHA=$(gh api "repos/${{ github.repository }}/commits/$TAG" --jq .sha)
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-          echo "date=${TAG#latest-}" >> "$GITHUB_OUTPUT"
-          echo "Delivering $TAG ($SHA)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "Delivering $TAG ($SHA), version $VERSION, prerelease=$PRERELEASE"
 
   build_linux:
     needs: set_tag
@@ -1003,12 +1053,15 @@ jobs:
 
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      DELIVERY_NB_RELEASES_TO_KEEP: 3
-      DELIVERY_TAG_PREFIX: 'latest-'
+      # Snapshots only. Release tags are kept permanently: a result someone
+      # produced has to stay reproducible (VERSIONING.md).
+      SNAPSHOTS_TO_KEEP: 5
+      SNAPSHOT_TAG_PREFIX: 'dev-'
       MAINDIR: 'OpenCourant'
       TAG: ${{ needs.set_tag.outputs.tag }}
       SHA: ${{ needs.set_tag.outputs.sha }}
-      DATEOFTHETAG: ${{ needs.set_tag.outputs.date }}
+      VERSION: ${{ needs.set_tag.outputs.version }}
+      PRERELEASE: ${{ needs.set_tag.outputs.prerelease }}
 
     steps:
 
@@ -1101,9 +1154,18 @@ jobs:
         run: |
           set -e
           AUTHOR=$(gh api "repos/${{ github.repository }}/commits/${SHA}" --jq '.author.login // .commit.author.name')
+          EXTLIB_VERSION=$(python3 -c 'import json;print(json.load(open("EXTLIB_VERSION.json"))["version"])')
+          READER_BUILD_ID=$(python3 -c 'import json;print(json.load(open("EXTLIB_VERSION.json")).get("build_id",""))')
 
           {
-            echo "This automatic release is built from commit ${SHA}, authored by @${AUTHOR}."
+            if [ "${PRERELEASE}" = "true" ]
+            then
+              echo "**Development snapshot, not a release.** Built automatically from \`main\` for testing; see [VERSIONING.md](https://github.com/${{ github.repository }}/blob/main/VERSIONING.md). For production use pick the [latest release](https://github.com/${{ github.repository }}/releases/latest)."
+            else
+              echo "OpenCourant ${VERSION}. See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${TAG}/CHANGELOG.md) for what changed, in particular whether anything can move numerical results."
+            fi
+            echo ""
+            echo "Built from commit ${SHA}, authored by @${AUTHOR}."
             echo "[GitHub Actions workflow run that built this release](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             echo ""
             echo "Commit message:"
@@ -1171,36 +1233,65 @@ jobs:
             echo "- The Linux \`_ompi\` Engines require OpenMPI 4.1.2 installed in \`/opt/openmpi\` (see INSTALL.md); the SMP Engines run standalone"
             echo "- \`/ALE/STRUCTURED_MESH\` is rejected explicitly: the feature is non-functional in the shipped input readers (generates degenerate meshes), so an explicit error beats silently wrong results"
             echo ""
+            echo "## Provenance"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Version | \`${VERSION}\` |"
+            echo "| Commit | \`${SHA}\` |"
+            echo "| extlib | \`${EXTLIB_VERSION}\` |"
+            echo "| hm_reader build ID | \`${READER_BUILD_ID}\` |"
+            echo ""
+            echo "SHA-256 of the packages below (the \`.sif\` images are attached later in the run):"
+            echo ""
+            echo '```text'
+            sha256sum todeliver/${MAINDIR}_linux64.zip \
+                      exec_tmp/OpenCourant_win64/OpenCourant_win64.zip \
+                      exec_tmp/OpenCourant_linuxa64/OpenCourant_linuxa64.zip \
+              | awk '{n=split($2,p,"/"); printf "%s  %s\n", $1, p[n]}'
+            echo '```'
+            echo ""
             echo "Thank you for using OpenCourant! 👉 [Share your feedback on the OpenCourant forum](https://github.com/orgs/${{ github.repository_owner }}/discussions)"
           } > release_body.md
+
+          if [ "${PRERELEASE}" = "true" ]
+          then
+            TITLE="OpenCourant snapshot ${TAG}"
+            FLAGS="--prerelease"
+          else
+            TITLE="OpenCourant ${VERSION}"
+            FLAGS="--latest"
+          fi
 
           # Re-deliveries replace the existing release on the same tag
           gh release delete "${TAG}" --repo "${{ github.repository }}" --yes || true
           gh release create "${TAG}" \
             --repo "${{ github.repository }}" \
             --verify-tag \
-            --title "OpenCourant stable build ${DATEOFTHETAG}" \
+            ${FLAGS} \
+            --title "${TITLE}" \
             --notes-file release_body.md \
             todeliver/${MAINDIR}_linux64.zip \
             exec_tmp/OpenCourant_win64/OpenCourant_win64.zip \
             exec_tmp/OpenCourant_linuxa64/OpenCourant_linuxa64.zip
 
-      - name: Clean old github releases and tags
+      # Only snapshots are pruned; release tags stay forever.
+      - name: Clean old development snapshots
         run: |
           gh api "repos/${{ github.repository }}/releases" --paginate \
-            --jq '.[] | select(.tag_name | startswith("'"${DELIVERY_TAG_PREFIX}"'")) | "\(.created_at)\t\(.id)\t\(.tag_name)"' \
-            | sort -r | tail -n "+$((DELIVERY_NB_RELEASES_TO_KEEP + 1))" \
+            --jq '.[] | select(.tag_name | startswith("'"${SNAPSHOT_TAG_PREFIX}"'")) | "\(.created_at)\t\(.id)\t\(.tag_name)"' \
+            | sort -r | tail -n "+$((SNAPSHOTS_TO_KEEP + 1))" \
             | while IFS=$'\t' read -r created id tag
           do
-            echo "Deleting old release $tag (created $created)"
+            echo "Deleting old snapshot $tag (created $created)"
             gh api -X DELETE "repos/${{ github.repository }}/releases/$id"
             gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/$tag"
           done
 
       # Temporarily disabled until things calm down and releases are less
-      # frequent; flip the `if` back to re-enable the announcement post.
+      # frequent; drop the `false &&` to re-enable the announcement post.
       - name: Create a new GitHub Discussion Announcement
-        if: ${{ false }}
+        if: ${{ false && needs.set_tag.outputs.prerelease == 'false' }}
         continue-on-error: true
         uses: actions/github-script@v8
         env:
@@ -1373,6 +1464,8 @@ jobs:
       IMAGE: ghcr.io/opencourant/opencourant
       HUB_IMAGE: docker.io/opencourant/opencourant
       TAG: ${{ needs.set_tag.outputs.tag }}
+      VERSION: ${{ needs.set_tag.outputs.version }}
+      PRERELEASE: ${{ needs.set_tag.outputs.prerelease }}
 
     steps:
 
@@ -1392,19 +1485,28 @@ jobs:
 
       - name: Create multi-arch manifests
         run: |
-          docker buildx imagetools create \
-            -t ${IMAGE}:${TAG} \
-            -t ${IMAGE}:latest \
-            ${IMAGE}:${TAG}-amd64 \
-            ${IMAGE}:${TAG}-arm64
-          docker buildx imagetools inspect ${IMAGE}:${TAG}
+          set -e
+          # :latest tracks formal releases only, so a snapshot cannot become
+          # what an unpinned 'docker pull opencourant' gets.
+          if [ "${PRERELEASE}" = "true" ]
+          then
+            ALIASES="dev"
+          else
+            ALIASES="${VERSION} ${VERSION%%.*} latest"
+          fi
 
-          docker buildx imagetools create \
-            -t ${HUB_IMAGE}:${TAG} \
-            -t ${HUB_IMAGE}:latest \
-            ${HUB_IMAGE}:${TAG}-amd64 \
-            ${HUB_IMAGE}:${TAG}-arm64
-          docker buildx imagetools inspect ${HUB_IMAGE}:${TAG}
+          for registry in ${IMAGE} ${HUB_IMAGE}
+          do
+            args="-t ${registry}:${TAG}"
+            for alias in ${ALIASES}
+            do
+              args="$args -t ${registry}:${alias}"
+            done
+            docker buildx imagetools create $args \
+              ${registry}:${TAG}-amd64 \
+              ${registry}:${TAG}-arm64
+            docker buildx imagetools inspect ${registry}:${TAG}
+          done
 
   cleanup_artifacts:
     if: ${{ always() && github.repository_owner == 'OpenCourant' }}

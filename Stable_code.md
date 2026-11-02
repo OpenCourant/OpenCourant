@@ -9,7 +9,10 @@ Review the [How to Contribute](Contributing.md) section to create a clone of Ope
 * The Tag is in the main branch of OpenCourant.
 * It is named
 
-      latest-YYYYMMDD
+      v<version>
+
+  for example `v2026.1`, where the version follows [VERSIONING.md](VERSIONING.md).
+  Development snapshots are tagged `dev-YYYYMMDD-<commit>` and are not releases.
 
 ## To obtain a stable version of the code
 
@@ -31,7 +34,7 @@ Command line calls permit gathering the tags from OpenCourant:
 
   To work on the latest stable version
 
-      export latest_tag=`git tag --sort=-version:refname  |head -1`
+      export latest_tag=`git tag --list 'v*' --sort=-version:refname |head -1`
       git checkout $latest_tag
       
 #### On Windows in the clone with cmd commands
@@ -39,7 +42,7 @@ Command line calls permit gathering the tags from OpenCourant:
   To gather all tags from OpenCourant
 
       git fetch --tags origin main
-      git tag --sort=-version:refname > tags.txt
+      git tag --list "v*" --sort=-version:refname > tags.txt
       set /p latest-tag=<tags.txt
       git checkout %latest-tag%
 
@@ -55,7 +58,7 @@ Command line calls permit gathering the tags from OpenCourant when the clone is 
 
   To work on the latest stable version:
 
-      export latest_tag=`git tag --sort=-version:refname  |head -1`
+      export latest_tag=`git tag --list 'v*' --sort=-version:refname |head -1`
       git checkout $latest_tag
       
 #### On Windows in the fork clone with cmd commands
@@ -66,6 +69,6 @@ Command line calls permit gathering the tags from OpenCourant when the clone is 
 
   To work on the latest stable version:
 
-      git tag --sort=-version:refname > tags.txt
+      git tag --list "v*" --sort=-version:refname > tags.txt
       set /p latest-tag=<tags.txt
       git checkout %latest-tag%

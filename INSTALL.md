@@ -159,8 +159,13 @@ Note that variables `RAD_CFG_PATH` and `RAD_H3D_PATH` start with `c:` unlike the
 Prebuilt multi-arch (x86_64 and arm64) solver containers are published with
 every stable release:
 
-        ghcr.io/opencourant/opencourant:latest
-        ghcr.io/opencourant/opencourant:latest-YYYYMMDD
+        ghcr.io/opencourant/opencourant:latest     newest release
+        ghcr.io/opencourant/opencourant:2026.1     a given release
+        ghcr.io/opencourant/opencourant:2026       newest release of that year
+        ghcr.io/opencourant/opencourant:dev        newest development snapshot
+
+Pin to a full version for anything you need to reproduce. `:dev` tracks
+`main` and is not a release; see [VERSIONING.md](VERSIONING.md).
 
 The executables are on `PATH` inside the container under convenience names
 (`starter`, `engine`, `engine_ompi`, plus `_sp` single-precision variants),
