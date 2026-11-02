@@ -2,8 +2,14 @@
 
 OpenCourant builds are available in the [Releases area on GitHub](https://github.com/OpenCourant/OpenCourant/releases).
 
-* Builds are based on a git tag marking a given changelist as stable.
-* Three builds are available: they are based on the last three tags marking OpenCourant as stable.
+* Releases are numbered `YYYY.N[.P]` and tagged `v<version>`, for example `v2026.1`. See [VERSIONING.md](VERSIONING.md).
+* Every release is kept, so a result stays reproducible. Read [CHANGELOG.md](CHANGELOG.md) before upgrading a validated model: changes that can move numerical results have their own section.
+* Development snapshots of `main` are published as prereleases tagged `dev-YYYYMMDD-<commit>`. They are for testing and only the most recent few are kept.
+* The newest release is always at a fixed URL, so install scripts do not need updating:
+
+      https://github.com/OpenCourant/OpenCourant/releases/latest/download/OpenCourant_linux64.zip
+      https://github.com/OpenCourant/OpenCourant/releases/latest/download/OpenCourant_win64.zip
+      https://github.com/OpenCourant/OpenCourant/releases/latest/download/OpenCourant_linuxa64.zip
 
 The build package contains OpenCourant binaries for Linux and Windows:
 

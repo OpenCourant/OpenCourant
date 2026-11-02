@@ -18,8 +18,8 @@ From: ghcr.io/opencourant/opencourant:latest
 #   apptainer exec opencourant.sif engine  -i MODEL_0001.rad
 #   apptainer exec opencourant.sif mpiexec -np 4 engine_ompi -i MODEL_0001.rad
 #
-# Pin a release with a dated tag, e.g.
-# docker://ghcr.io/opencourant/opencourant:latest-20261006
+# Pin a release with its version, e.g.
+# docker://ghcr.io/opencourant/opencourant:2026.1
 
 %labels
     org.opencontainers.image.source https://github.com/OpenCourant/OpenCourant

@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: 'Container tag to convert (e.g. latest-20261006)'
+        description: 'Container tag to convert (e.g. 2026.1, or dev)'
         required: true
-        default: 'latest-20261006'
+        default: 'latest'
 
 jobs:
 
