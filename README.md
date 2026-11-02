@@ -16,6 +16,7 @@ If you have any questions about OpenCourant, please feel free to contact <hello@
 * [How to Build OpenCourant](HOWTO.md)
 * [How to Run OpenCourant](INSTALL.md)
 * [OpenCourant Stable Releases](RELEASES.md)
+* [Versioning and release policy](VERSIONING.md)
 
 ## Community and Ways to Participate
 
