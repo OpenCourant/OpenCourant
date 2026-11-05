@@ -15,6 +15,13 @@ Copyright>        You should have received a copy of the GNU Affero General Publ
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Copyright>
 Copyright>
+Copyright>        OpenCourant
+Copyright>        Copyright (C) 2026 OpenCourant contributors
+Copyright>
+Copyright>        Modified by the OpenCourant project, 2026.
+Copyright>        Modifications are licensed under the GNU Affero General Public
+Copyright>        License, version 3 or (at your option) any later version.
+Copyright>
 Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 Copyright>        See COPYRIGHT.md at the root of the repository for the full
 Copyright>        copyright and attribution statement.
@@ -3242,13 +3249,12 @@ c-----2. prepare icol for second nodes using ikine;
 C----- pass for IND_GLOB_K, including RBE2 main   
       LCOKM=LNK
       NKINE0=NKINE
-      IF (NKINE0>0) THEN
-       ALLOCATE(ICOK(NKINE*NNMAX))
-       ALLOCATE(NROWI(NKINE))
-      ENDIF
-      DO N =1,NKINE0
-       NROWI(N)=0
-      ENDDO
+C     Always allocated: both arrays are passed below even when NKINE=0.
+C     ifx 2026.1 /O3 dropped the zero-trip test of the NROWI loop when the
+C     ALLOCATE was guarded, overrunning the heap for NKINE=0.
+      ALLOCATE(ICOK(MAX(1,NKINE*NNMAX)))
+      ALLOCATE(NROWI(MAX(1,NKINE)))
+      NROWI = 0
       CALL DIM_ELEMS3(
      1    ELBUF     ,IPARG     ,IXS       ,IXQ       ,IXC       ,
      2    IXT       ,IXP       ,IXR       ,IXTG      ,IXTG1     ,
@@ -3269,10 +3275,8 @@ c-----3. calculation NNMAX,NKMAX and creating INLOC,NKINE;
      2    NINT2     ,IINT2     ,IPARI     ,INTBUF_TAB,NDOF      ,
      3    NNMAX     ,NROW      ,NROWI     ,NKINE     ,INLOC     , 
      4    ICOK      ,IRBE3     ,LRBE3     ,IRBE2     ,LRBE2     )
-      IF (NKINE0>0) THEN
-       DEALLOCATE(ICOK)
-       DEALLOCATE(NROWI)
-      ENDIF
+      DEALLOCATE(ICOK)
+      DEALLOCATE(NROWI)
 C
       NKMAX=NNMAX
       NNMAX0=NNMAX
@@ -3290,14 +3294,11 @@ C----for some special case (hierarchy kinematic RBE2/RBE3),NKMAX is underestimat
         IF (NSPMD>1)CALL SPMD_MAX_I(NKMAX)
 C
       NKINE0=NKINE
-      IF (NKINE0>0) THEN
-       NK = LNK*NKMAX+NKINE*NNMAX
-       ALLOCATE(ICOK(NK))
-       ALLOCATE(NROWI(NKINE))
-      ENDIF
-      DO N =1,NKINE0
-       NROWI(N)=0
-      ENDDO
+C     Always allocated, as above.
+      NK = LNK*NKMAX+NKINE*NNMAX
+      ALLOCATE(ICOK(MAX(1,NK)))
+      ALLOCATE(NROWI(MAX(1,NKINE)))
+      NROWI = 0
         L1 = 1
         L2 = 1 + LNK*NKMAX
          CALL DIM_ELEMS2(
@@ -3334,10 +3335,8 @@ c-----3. calculation NNMAX,NKMAX and creating INLOC,NKINE;
        NK=INLOC(N)
        IF (NK>0)NROW(N)=NROWI(NK)
       ENDDO
-      IF (NKINE0>0) THEN
-       DEALLOCATE(ICOK)
-       DEALLOCATE(NROWI)
-      ENDIF
+      DEALLOCATE(ICOK)
+      DEALLOCATE(NROWI)
       IF (NADMESH > 0) CALL RMDIM_IMP(IXC ,IXTG  ,NDOF ,NNMAX,NKINE,
      1                                INLOC,NROW ,ITAB ,SH4TREE,SH3TREE)
 C----6---------------------------------------------------------------7---------8
