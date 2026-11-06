@@ -15,6 +15,13 @@ Copyright>        You should have received a copy of the GNU Affero General Publ
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Copyright>
 Copyright>
+Copyright>        OpenCourant
+Copyright>        Copyright (C) 2026 OpenCourant contributors
+Copyright>
+Copyright>        Modified by the OpenCourant project, 2026.
+Copyright>        Modifications are licensed under the GNU Affero General Public
+Copyright>        License, version 3 or (at your option) any later version.
+Copyright>
 Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 Copyright>        See COPYRIGHT.md at the root of the repository for the full
 Copyright>        copyright and attribution statement.
@@ -548,7 +555,7 @@ C--               Pretensioning deactivated when force is reached
                     YY = F_LOCK/RETRACTOR(RETRACTOR_ID(I))%FAC(1)
                     CALL RETRACTOR_TABLE_INV(RETRACTOR(RETRACTOR_ID(I))%TABLE(1),XX,YY)
                     XX = XX*RETRACTOR(RETRACTOR_ID(I))%FAC(2)
-                    RETRACTOR(RETRACTOR_ID(I))%LOCK_PULL = RETRACTOR(RETRACTOR_ID(I))%FAC(2)*XX
+                    RETRACTOR(RETRACTOR_ID(I))%LOCK_PULL = XX
                     RETRACTOR(RETRACTOR_ID(I))%PRETENS_ACTIV = -1
                     RETRACTOR(RETRACTOR_ID(I))%PRETENS_PULL = ZERO
                   ENDIF
@@ -558,19 +565,26 @@ C--             Pretensioning with force -> F = F_retractor + F_pretens
                 FORCE_TENS_TYP = 2
                 F_UNLOCK = MAX(RETRACTOR(RETRACTOR_ID(I))%UNLOCK_FORCE,PRETENS)    
               ELSEIF (RETRACTOR(RETRACTOR_ID(I))%TENS_TYP == 3) THEN
-C--             Pretensioning with force -> F = MAX(F_retractor,F_pretens) - same as type2 with locking
+C--             Active pretensioning: F = MAX(F_retractor,F_pretens)
                 FORCE_TENS_TYP = 2
                 IF (RETRACTOR(RETRACTOR_ID(I))%PRETENS_PULL > RETRACTOR(RETRACTOR_ID(I))%PULLOUT) THEN
-C--               Pretensioning deactivated when pullout is reached
-                  RETRACTOR(RETRACTOR_ID(I))%LOCKED = 1
-                  YY = F_LOCK/RETRACTOR(RETRACTOR_ID(I))%FAC(1)
-                  CALL RETRACTOR_TABLE_INV(RETRACTOR(RETRACTOR_ID(I))%TABLE(1),XX,YY)
-                  XX = XX*RETRACTOR(RETRACTOR_ID(I))%FAC(2)
-                  RETRACTOR(RETRACTOR_ID(I))%LOCK_PULL = RETRACTOR(RETRACTOR_ID(I))%FAC(2)*XX
+C--               Initialize curve position only on first locking
+                  IF (RETRACTOR(RETRACTOR_ID(I))%LOCKED == 0) THEN
+                    YY = F_LOCK /RETRACTOR(RETRACTOR_ID(I))%FAC(1)
+                    CALL RETRACTOR_TABLE_INV(RETRACTOR(RETRACTOR_ID(I))%TABLE(1),XX,YY)
+                    RETRACTOR(RETRACTOR_ID(I))%LOCK_PULL =XX*RETRACTOR(RETRACTOR_ID(I))%FAC(2)
+                    RETRACTOR(RETRACTOR_ID(I))%LOCKED = 1
+                  ENDIF
+C--               Deactivate pretensioning in either locking state
                   RETRACTOR(RETRACTOR_ID(I))%PRETENS_ACTIV = -1
                   RETRACTOR(RETRACTOR_ID(I))%PRETENS_PULL = ZERO
-                ENDIF
-                F_UNLOCK = MAX(RETRACTOR(RETRACTOR_ID(I))%UNLOCK_FORCE,PRETENS)            
+C--               Remove pretension contribution in this same step
+                  FORCE_TENS_TYP = 0
+                  PRETENS = ZERO
+                  F_UNLOCK = RETRACTOR(RETRACTOR_ID(I))%UNLOCK_FORCE
+                ELSE
+                  F_UNLOCK = MAX(RETRACTOR(RETRACTOR_ID(I))%UNLOCK_FORCE,PRETENS)
+                ENDIF     
               ELSEIF (RETRACTOR(RETRACTOR_ID(I))%TENS_TYP == 4) THEN
 C--             Pretensioning with force -> F = F_retractor + F_pretens
                 FORCE_TENS_TYP = 4
