@@ -97,6 +97,8 @@ set (md5_lib "${source_directory}/../extlib/md5/linux64/libmd5.a")
 #     a) clean: if you already built OpenRadioss without mumps, you need to run:  ./build_script.sh -arch=linux64_gf -nt=4 -mpi=ompi -clean 
 #     b) To build penRadioss with MUMPS and implicit feature, you need to run the following command, replacing ${absolute_path} by the absolute path to the engine directory.
 #        ./build_script.sh -arch=linux64_gf -nt=4 -mpi=ompi -mumps_root=${absolute_path}/extlib/MUMPS_5.5.1 -scalapack_root=${absolute_path}/extlib/scalapack-2.2.0/build/lib -lapack_root=${absolute_path}/extlib/lapack-3.10.1/
+#        Such a build produces a distinct engine_linux64_gf_ompi_mumps executable so that
+#        it can coexist with the plain engine built without MUMPS.
 if( DEFINED mumps_root AND NOT "${mumps_root}" STREQUAL "")
   set(MUMPSLIB "${mumps_root}/lib")
   set(mumps_inc "-I${mumps_root}/include")

@@ -27,4 +27,5 @@ From: ghcr.io/opencourant/opencourant:latest
 %help
     OpenCourant explicit finite element solver (Starter + Engine, SMP and
     OpenMPI). Executables are on PATH: starter, engine, engine_ompi,
-    anim_to_vtk_*, th_to_csv_* (plus _sp single-precision variants).
+    engine_ompi_mumps (linux64 only), anim_to_vtk_*, th_to_csv_* (plus
+    _sp single-precision variants).

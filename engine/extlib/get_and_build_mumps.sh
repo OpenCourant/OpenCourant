@@ -23,7 +23,7 @@ make tmglib
 cd ../scalapack-${v_scalapack}
 mkdir build
 cd build
-cmake .. -DBUILD_SHARED_LIBS=off -DCMAKE_Fortran_COMPILER=mpif90 -DCMAKE_INSTALL_PREFIX=./install -DBLAS_LIBRARIES=${current_path}/lapack-${v_lapack}/librefblas.a -DLAPACK_LIBRARIES=${current_path}/lapack-${v_lapack}/liblapack.a -DCMAKE_Fortran_FLAGS="-fallow-argument-mismatch" 
+cmake .. -DBUILD_SHARED_LIBS=off -DCMAKE_Fortran_COMPILER=mpif90 -DCMAKE_INSTALL_PREFIX=./install -DBLAS_LIBRARIES=${current_path}/lapack-${v_lapack}/librefblas.a -DLAPACK_LIBRARIES=${current_path}/lapack-${v_lapack}/liblapack.a -DCMAKE_Fortran_FLAGS="-fallow-argument-mismatch" -DCMAKE_C_FLAGS="-Wno-error=implicit-function-declaration"
 make
 make install
 cd ../../
@@ -67,8 +67,12 @@ echo 'LIBSEQNEEDED = ' >> Makefile.inc
 
 # Now you can build MUMPS
 make all
+build_exit=$?
 
-#
+# clean up
+cd ..
 rm *gz
 rm *gz.1
 rm *gz.2
+
+exit $build_exit
