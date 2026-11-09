@@ -166,6 +166,9 @@ The executables are on `PATH` inside the container under convenience names
 (`starter`, `engine`, `engine_ompi`, plus `_sp` single-precision variants),
 the OpenMPI runtime is included, and all environment variables are preset.
 
+`engine_ompi_mumps` is the same OpenMPI Engine with the MUMPS linear solver
+linked in, for implicit analyses; it is shipped in the linux64 package only.
+
 #### With Docker or Podman
 
 * Run Starter and Engine from the directory that contains the input file

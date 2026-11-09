@@ -123,6 +123,13 @@ jobs:
             binary: engine
             mpi: ompi
 
+          - build: engine_linux64_gf_ompi_mumps
+            precision: dp
+            os: linux64
+            binary: engine
+            mpi: ompi
+            mumps: true
+
           - build: engine_linux64_gf
             precision: dp
             os: linux64
@@ -141,15 +148,34 @@ jobs:
           lfs: 'false'
           ref: ${{ needs.set_tag.outputs.tag }}
 
+      # LAPACK + ScaLAPACK + MUMPS take a long time to build; reuse them
+      # across runs as long as get_and_build_mumps.sh and the image are
+      # unchanged.
+      - name: Restore MUMPS build cache
+        if: ${{ matrix.mumps }}
+        uses: actions/cache@v4
+        with:
+          path: |
+            engine/extlib/lapack-3.10.1
+            engine/extlib/scalapack-2.2.0
+            engine/extlib/MUMPS_5.5.1
+          key: mumps-5.5.1-linux64-gf-ompi4.1.2-${{ hashFiles('engine/extlib/get_and_build_mumps.sh') }}
+
       - name: Running build
         run: |
           mpi_opts=''
-          if [ ! -z ${{ matrix.mpi }} ]
+          if [ -n "${{ matrix.mpi }}" ]
           then
             mpi_opts="-mpi=${{ matrix.mpi }}"
           fi
 
-          cmd="./build_script.sh -release -arch=${{ matrix.os }}_gf -prec=${{ matrix.precision }} -nt=${{ env.BUILD_NB_THREAD }} -static-link $mpi_opts"
+          mumps_opts=''
+          if [ -n "${{ matrix.mumps }}" ]
+          then
+            mumps_opts="-mumps_root=$(pwd)/engine/extlib/MUMPS_5.5.1 -scalapack_root=$(pwd)/engine/extlib/scalapack-2.2.0/build/lib -lapack_root=$(pwd)/engine/extlib/lapack-3.10.1"
+          fi
+
+          cmd="./build_script.sh -release -arch=${{ matrix.os }}_gf -prec=${{ matrix.precision }} -nt=${{ env.BUILD_NB_THREAD }} -static-link $mpi_opts $mumps_opts"
           echo "========================================="
           echo "--  BUILD ${{ matrix.build }} --"
           echo "--  $cmd --"
@@ -159,7 +185,16 @@ jobs:
           chmod 755 ${{ matrix.binary }}/build_script.sh
 
           mkdir exec
-          cd ${{ matrix.binary }}
+          if [ -n "${{ matrix.mumps }}" ]
+          then
+            if [ ! -f engine/extlib/MUMPS_5.5.1/lib/libdmumps.a ]
+            then
+              ( cd engine/extlib && bash get_and_build_mumps.sh )
+            fi
+            cd engine
+          else
+            cd ${{ matrix.binary }}
+          fi
           eval $cmd
           cd ..
 
@@ -237,7 +272,6 @@ jobs:
       hm_reader_extlib: ../../extlib/hm_reader
       hm_reader_cfgfiles: ../../hm_cfg_files
       homeuser: /root
-      mpi: ompi
       QA_NB_PROC: 2
       QA_NB_THREAD: 2
 
@@ -246,6 +280,7 @@ jobs:
       matrix:
         os: [linux64]
         precision: [dp]
+        engine: [engine_linux64_gf_ompi, engine_linux64_gf_ompi_mumps]
 
     steps:
 
@@ -264,7 +299,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
-          name: bins-${{ matrix.os }}-${{ matrix.precision }}-engine_linux64_gf_ompi
+          name: bins-${{ matrix.os }}-${{ matrix.precision }}-${{ matrix.engine }}
           path: exec
           merge-multiple: true
       - name: Download extlib artifact
@@ -279,12 +314,6 @@ jobs:
       - name: Running qa
         run: |
           md5sum exec/* || echo "Nothing in exec/"
-          if [ "${{ matrix.precision }}" = "dp" ]
-          then
-            precision_ext=""
-          else
-            precision_ext="_${{ matrix.precision }}"
-          fi
 
           chmod 755 exec/*
           cd qa-tests/scripts
@@ -298,9 +327,9 @@ jobs:
           source ${{ env.homeuser }}/.bashrc
           export LD_LIBRARY_PATH=${{ env.hm_reader_extlib }}/${{ matrix.os }}:$LD_LIBRARY_PATH
 
-          cmd="./or_qa_script ../../exec/engine_${{ matrix.os }}_gf_${{ env.mpi }}${precision_ext} 1.0 --env:RAD_CFG_PATH=${{ env.hm_reader_cfgfiles }} --system_run --env:OMP_STACKSIZE=400m --exec_script_args='mpiexec -np ${{ env.QA_NB_PROC }}' --env:OMP_NUM_THREADS=${{ env.QA_NB_THREAD }} --output_failures_stdout --xtra_args='--timeoutscript=${{ env.QA_TIMEOUT_PER_TEST_LINUX }}' "
+          cmd="./or_qa_script ../../exec/${{ matrix.engine }} 1.0 --env:RAD_CFG_PATH=${{ env.hm_reader_cfgfiles }} --system_run --env:OMP_STACKSIZE=400m --exec_script_args='mpiexec -np ${{ env.QA_NB_PROC }}' --env:OMP_NUM_THREADS=${{ env.QA_NB_THREAD }} --output_failures_stdout --xtra_args='--timeoutscript=${{ env.QA_TIMEOUT_PER_TEST_LINUX }}' "
           echo "========================================="
-          echo "--  QA ${{ matrix.os }}_${{ matrix.precision }} --"
+          echo "--  QA ${{ matrix.os }}_${{ matrix.precision }}_${{ matrix.engine }} --"
           echo "--  $cmd --"
           echo "========================================="
           eval $cmd
@@ -1083,6 +1112,14 @@ jobs:
           and the GNU project (https://gcc.gnu.org).
           EOF
 
+          # Both dp OpenMPI engines must be present: the plain one and the
+          # MUMPS-enabled one. build_script.sh suffixes the latter with
+          # _mumps, so the two can coexist in exec/.
+          for exe in starter_linux64_gf engine_linux64_gf \
+                     engine_linux64_gf_ompi engine_linux64_gf_ompi_mumps; do
+            test -x todeliver/${MAINDIR}/exec/$exe || { echo "missing $exe in package"; exit 1; }
+          done
+
           chmod 755 todeliver/${MAINDIR}/exec/*
 
           cd todeliver
@@ -1122,6 +1159,8 @@ jobs:
             echo '```'
             echo ""
             echo "Executables are in \`exec/\` (Starter and Engine in single and double precision, SMP and OpenMPI, plus anim_to_vtk and th_to_csv converters)."
+            echo ""
+            echo "\`engine_linux64_gf_ompi_mumps\` is the OpenMPI Engine with the MUMPS linear solver linked in, for implicit analyses. It has the same command-line interface as \`engine_linux64_gf_ompi\`."
             echo ""
             echo "## Windows x86_64 package"
             echo ""
@@ -1324,7 +1363,7 @@ jobs:
           set -e
           cp -a qa-tests/miniqa/ACCELEROMETRES/data /tmp/model
           docker run --rm -v /tmp/model:/work ${IMAGE}:${TAG}-${{ matrix.platform }} \
-            bash -c "starter -i ACCELERO_0000.rad -np 1 > s.out 2>&1 && engine -i ACCELERO_0001.rad > e.out 2>&1 && grep -q 'NORMAL TERMINATION' e.out && starter -i ACCELERO_0000.rad -np 2 > s2.out 2>&1 && mpiexec -np 2 engine_ompi -i ACCELERO_0001.rad > e2.out 2>&1 && grep -q 'NORMAL TERMINATION' e2.out"
+            bash -c "starter -i ACCELERO_0000.rad -np 1 > s.out 2>&1 && engine -i ACCELERO_0001.rad > e.out 2>&1 && grep -q 'NORMAL TERMINATION' e.out && starter -i ACCELERO_0000.rad -np 2 > s2.out 2>&1 && mpiexec -np 2 engine_ompi -i ACCELERO_0001.rad > e2.out 2>&1 && grep -q 'NORMAL TERMINATION' e2.out && { command -v engine_ompi_mumps > /dev/null || exit 0; } && mpiexec -np 2 engine_ompi_mumps -i ACCELERO_0001.rad > e3.out 2>&1 && grep -q 'NORMAL TERMINATION' e3.out"
           echo "Smoke test passed on ${{ matrix.platform }}"
 
       - name: Push images

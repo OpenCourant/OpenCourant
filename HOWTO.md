@@ -481,6 +481,7 @@ Those bellongs to the most commonly used architectures:
          -mumps_root=[path_to_mumps]          : path_to_mumps/lib/libdmumps.a must exist
          -scalapack_root=[path to scalapack]  : path_to_scalapack/libscalapack.a must exist
          -lapack_root=[path to lapack]  : path_to_lapack/liblapack.a must exist
+         MUMPS-enabled executables get a _mumps suffix (e.g. engine_linux64_gf_ompi_mumps)
         
          -no-python : do not link with python
 
@@ -640,6 +641,7 @@ Those bellongs to the most commonly used architectures:
          -mumps_root=[path_to_mumps]          : path_to_mumps/lib/libdmumps.a must exist
          -scalapack_root=[path to scalapack]  : path_to_scalapack/libscalapack.a must exist
          -lapack_root=[path to lapack]  : path_to_lapack/liblapack.a must exist
+         MUMPS-enabled executables get a _mumps suffix (e.g. engine_linux64_gf_ompi_mumps)
         
          -no-python : do not link with python
 

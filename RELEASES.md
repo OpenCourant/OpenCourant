@@ -22,6 +22,7 @@ Linux builds can be executed on:
        │   ├── starter_linux64_gf
        │   ├── engine_linux64_gf
        │   ├── engine_linux64_gf_ompi
+       │   ├── engine_linux64_gf_ompi_mumps
        │   ├── starter_linux64_gf_sp
        │   ├── engine_linux64_gf_sp
        │   ├── engine_linux64_gf_ompi_sp
@@ -45,6 +46,7 @@ Linux builds can be executed on:
   * starter_linux64_gf: OpenCourant Starter. Compiler is Gfortran.
   * engine_linux64_gf: OpenCourant Engine for SMP (Shared Memory Parallelism) runs based on OpenMP. Compiler is Gfortran.
   * engine_linux64_gf_ompi: OpenCourant Engine for MPI and Hybrid MPI/OpenMP runs. This executable is built against OpenMPI. Compiler is Gfortran.
+  * engine_linux64_gf_ompi_mumps: OpenCourant Engine for MPI and Hybrid MPI/OpenMP runs, with the MUMPS linear solver linked in for implicit analyses. Same command-line interface as engine_linux64_gf_ompi. Compiler is Gfortran.
   * starter_linux64_gf_sp: OpenCourant Starter "Extended Single Precision Version". Compiler is Gfortran.
   * engine_linux64_gf_sp: OpenCourant Engine "Extended Single Precision Version" for SMP (Shared Memory Parallelism) runs based on OpenMP. Compiler is Gfortran.
   * engine_linux64_gf_ompi_sp: OpenCourant Engine "Extended Single Precision Version" for MPI and Hybrid MPI/OpenMP runs. This executable is built against OpenMPI. Compiler is Gfortran.
