@@ -67,9 +67,12 @@ echo 'LIBSEQNEEDED = ' >> Makefile.inc
 
 # Now you can build MUMPS
 make all
+build_exit=$?
 
 # clean up
 cd ..
 rm *gz
 rm *gz.1
 rm *gz.2
+
+exit $build_exit
