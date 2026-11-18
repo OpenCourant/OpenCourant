@@ -15,6 +15,13 @@ Copyright>        You should have received a copy of the GNU Affero General Publ
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Copyright>
 Copyright>
+Copyright>        OpenCourant
+Copyright>        Copyright (C) 2026 OpenCourant contributors
+Copyright>
+Copyright>        Modified by the OpenCourant project, 2026.
+Copyright>        Modifications are licensed under the GNU Affero General Public
+Copyright>        License, version 3 or (at your option) any later version.
+Copyright>
 Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 Copyright>        See COPYRIGHT.md at the root of the repository for the full
 Copyright>        copyright and attribution statement.
@@ -8868,6 +8875,10 @@ C
                     ENDIF
                   END IF !(ILASTANIM==2) THEN
                   TT = MIN(TT,TSTOP+EM10)
+C                 DT2T is this process's own time step: with several processes
+C                 take the minimum, so that every process takes the same output
+C                 and stop decisions on DT2 (end-of-run animation).
+                  IF (NSPMD > 1) CALL SPMD_MIN_S(DT2T)
                   DT2 = DT2T
                 ENDIF !IF (IMP_CHK>0)
                 IF (TT>TSTOP.AND.INCONV==1) THEN
