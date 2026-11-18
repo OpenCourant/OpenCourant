@@ -1663,7 +1663,10 @@ C       re-evoluer Rref-------
             ENDIF
             IF (I_IMP(7)==0.AND.IREFI==4) IREFI= -4
           ENDIF
-          IF (IMCONV>0.AND.ISPRB/=1) THEN
+C         /IMPL/RREF/LIMIT bounds the reference residual on every pass (start of a step AND
+C         every Newton iteration), so that the iterations check against the same bounded
+C         reference as the start of the step.
+          IF (ISPRB/=1) THEN
             R02 = MAX(R02,RF_MIN*RF_MIN)
             R02 = MIN(R02,RF_MAX*RF_MAX)
           END IF
