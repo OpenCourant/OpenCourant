@@ -15,6 +15,13 @@ Copyright>        You should have received a copy of the GNU Affero General Publ
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Copyright>
 Copyright>
+Copyright>        OpenCourant
+Copyright>        Copyright (C) 2026 OpenCourant contributors
+Copyright>
+Copyright>        Modified by the OpenCourant project, 2026.
+Copyright>        Modifications are licensed under the GNU Affero General Public
+Copyright>        License, version 3 or (at your option) any later version.
+Copyright>
 Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 Copyright>        See COPYRIGHT.md at the root of the repository for the full
 Copyright>        copyright and attribution statement.
@@ -257,6 +264,34 @@ C IBFV(7,N):1 V;2 D ;0 A ;
         LJ(NN) = 0
       ENDDO
       NVL = 0
+C-----------------------------------------------
+C     Release the global-frame dof of every imposed motion before the
+C     active ones are flagged again below: IFIX=2 set at an earlier
+C     time would otherwise keep the dof imposed after its stop time
+C     (or before its start time, or after its sensor deactivated it).
+C-----------------------------------------------
+      DO N=1,NFXVEL
+        I=IABS(IBFV(1,N))
+        IF(NDOF(I)==0) CYCLE
+        ISK=IBFV(2,N)/10
+        IFM = IBFV(9,N)
+        J=IBFV(2,N)
+        IF (IFM<=1) J=J-10*ISK
+        IF (ISK<=1.AND.IFM<=1.AND.J>=1.AND.J<=6) THEN
+          K1 = IDDL(I)+J
+          IF (IFIX(K1)==2) IFIX(K1)=0
+        ELSEIF ((ISK>1.OR.IFM>1).AND.J>=1.AND.J<=6) THEN
+C--------- skew or moving frame: FVL_MODIF flags one global dof of the
+C--------- translation (J<=3) or rotation (J>3) triple with IFIX=9, or
+C--------- all three with IFIX=2 when three motions share the node
+          IF (J>3.AND.NDOF(I)<6) CYCLE
+          K1 = IDDL(I)
+          IF (J>3) K1 = K1+3
+          DO K=1,3
+            IF (IFIX(K1+K)==9.OR.IFIX(K1+K)==2) IFIX(K1+K)=0
+          ENDDO
+        ENDIF
+      ENDDO
 C
       DO NN=1,NFXVEL,NVSIZ
         IF (IBFV(8,NN)==1) GOTO 100
