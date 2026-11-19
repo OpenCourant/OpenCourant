@@ -55,6 +55,8 @@ function my_help()
   echo "     -mumps_root=[path_to_mumps]          : path_to_mumps/lib/libdmumps.a must exist"
   echo "     -scalapack_root=[path to scalapack]  : path_to_scalapack/libscalapack.a must exist" 
   echo "     -lapack_root=[path to lapack]  : path_to_lapack/liblapack.a must exist" 
+  echo "     MUMPS-enabled executables get a _mumps suffix (e.g. engine_linux64_gf_ompi_mumps)"
+  echo "     so that they can coexist with a build made without MUMPS."
   echo "    Linux64 Intel compilers"
   echo "      download MUMPS_5.5.1 at http://ftp.mcs.anl.gov/pub/petsc/externalpackages/MUMPS_5.5.1.tar.gz"
   echo "      and uncompress it in extlib directory such that engine/extlib/MUMPS_5.5.1 exists"
@@ -331,7 +333,15 @@ else
      ddebug=""
    fi 
 
-engine_exec=${eng_vers}_${arch}${dmpi}${suffix}${coupling_exe}${ddebug}
+# A MUMPS-enabled build gets a distinct executable (and build directory)
+# so that it can coexist with the plain build in the same exec directory.
+mumps_suffix=""
+if [ -n "$mumps_root" ]
+then
+  mumps_suffix="_mumps"
+fi
+
+engine_exec=${eng_vers}_${arch}${dmpi}${suffix}${coupling_exe}${mumps_suffix}${ddebug}
 build_directory=cbuild_${engine_exec}${cf}
 
 

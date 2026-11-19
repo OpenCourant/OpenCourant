@@ -15,6 +15,9 @@
 #       starter -i MODEL_0000.rad -np 4
 #   docker run -v $PWD:/work ghcr.io/opencourant/opencourant \
 #       mpiexec -np 4 engine_ompi -i MODEL_0001.rad
+#
+# The package also ships engine_<arch>_gf_ompi_mumps (MUMPS/implicit solver,
+# same interface as engine_ompi), exposed as engine_ompi_mumps below.
 
 ARG BLD_IMAGE=ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2
 FROM ${BLD_IMAGE} AS ompi
@@ -38,13 +41,17 @@ RUN unzip -q /tmp/opencourant.zip -d /opt && \
 COPY --from=ompi /opt/openmpi /opt/openmpi
 
 # Convenience names next to the arch-suffixed executables
+# (engine_ompi_mumps is only present in the linux64 package)
 RUN cd /opt/OpenCourant/exec && \
     ln -s starter_${ARCH_DIR}_gf       starter && \
     ln -s starter_${ARCH_DIR}_gf_sp    starter_sp && \
     ln -s engine_${ARCH_DIR}_gf        engine && \
     ln -s engine_${ARCH_DIR}_gf_sp     engine_sp && \
     ln -s engine_${ARCH_DIR}_gf_ompi    engine_ompi && \
-    ln -s engine_${ARCH_DIR}_gf_ompi_sp engine_ompi_sp
+    ln -s engine_${ARCH_DIR}_gf_ompi_sp engine_ompi_sp && \
+    if [ -x engine_${ARCH_DIR}_gf_ompi_mumps ]; then \
+        ln -s engine_${ARCH_DIR}_gf_ompi_mumps engine_ompi_mumps; \
+    fi
 
 ENV OPENCOURANT_PATH=/opt/OpenCourant \
     RAD_CFG_PATH=/opt/OpenCourant/hm_cfg_files \
