@@ -48,7 +48,7 @@ jobs:
 
   build_linux:
     if: ${{ github.repository_owner == 'OpenCourant' }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux64]
     container:
       image: "ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2"
       volumes:
@@ -143,7 +143,7 @@ jobs:
 
   qa_linux:
     needs: build_linux
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux64]
     container:
       image: "ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2"
       volumes:
