@@ -55,7 +55,8 @@ jobs:
         - /etc/localtime:/etc/localtime:ro
 
     env:
-      BUILD_NB_THREAD: 4
+      # Four runner instances share eight cores on the self-hosted box.
+      BUILD_NB_THREAD: 2
 
     strategy:
       # If one job fails others are canceled
