@@ -48,15 +48,14 @@ jobs:
 
   build_linux:
     if: ${{ github.repository_owner == 'OpenCourant' }}
-    runs-on: [self-hosted, linux64]
+    runs-on: ubuntu-latest
     container:
       image: "ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2"
       volumes:
         - /etc/localtime:/etc/localtime:ro
 
     env:
-      # Four runner instances share eight cores on the self-hosted box.
-      BUILD_NB_THREAD: 2
+      BUILD_NB_THREAD: 4
 
     strategy:
       # If one job fails others are canceled
@@ -144,7 +143,7 @@ jobs:
 
   qa_linux:
     needs: build_linux
-    runs-on: [self-hosted, linux64]
+    runs-on: ubuntu-latest
     container:
       image: "ghcr.io/opencourant/linux64-bld-qa:ompi4.1.2"
       volumes:
