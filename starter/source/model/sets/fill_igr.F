@@ -15,6 +15,13 @@ Copyright>        You should have received a copy of the GNU Affero General Publ
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Copyright>
 Copyright>
+Copyright>        OpenCourant
+Copyright>        Copyright (C) 2026 OpenCourant contributors
+Copyright>
+Copyright>        Modified by the OpenCourant project, 2026.
+Copyright>        Modifications are licensed under the GNU Affero General Public
+Copyright>        License, version 3 or (at your option) any later version.
+Copyright>
 Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 Copyright>        See COPYRIGHT.md at the root of the repository for the full
 Copyright>        copyright and attribution statement.
@@ -152,6 +159,11 @@ C
           END DO
 
           CLOSE(tmp_engine)
+        ELSE IF (I > 2) THEN
+C         Engine files are numbered from _0000 or _0001 with no later
+C         gaps. Stop at the first missing name after _0001 instead of
+C         probing _0002.rad through _9999.rad (issue #67).
+          EXIT
         ENDIF
       END DO
 
@@ -258,6 +270,11 @@ C
           END DO
 
           CLOSE(tmp_engine)
+        ELSE IF (I > 2) THEN
+C         Engine files are numbered from _0000 or _0001 with no later
+C         gaps. Stop at the first missing name after _0001 instead of
+C         probing _0002.rad through _9999.rad (issue #67).
+          EXIT
         ENDIF
       END DO
 
