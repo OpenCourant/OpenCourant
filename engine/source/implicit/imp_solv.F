@@ -15,6 +15,13 @@ Copyright>        You should have received a copy of the GNU Affero General Publ
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Copyright>
 Copyright>
+Copyright>        OpenCourant
+Copyright>        Copyright (C) 2026 OpenCourant contributors
+Copyright>
+Copyright>        Modified by the OpenCourant project, 2026.
+Copyright>        Modifications are licensed under the GNU Affero General Public
+Copyright>        License, version 3 or (at your option) any later version.
+Copyright>
 Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 Copyright>        See COPYRIGHT.md at the root of the repository for the full
 Copyright>        copyright and attribution statement.
@@ -319,6 +326,8 @@ C
         INTEGER, DIMENSION(:),ALLOCATABLE :: NSB2,ISB2,IAINT2
 C      ---INEGA is defined now in impl1_c.inc---
         INTEGER  NNOD,IFDIS,NODFTSK ,NODLTSK,N1,N2,N3
+        INTEGER  IFVCHG,NFV2B,NFV2A
+        INTEGER(KIND=8) IFV2B,IFV2A
 C
         INTEGER LBAND,NCL_MAX,IRFLAG,IPRINT0,IPRJ_S
 C
@@ -608,13 +617,48 @@ C---------no //SMP for the moment, add it after----
 C END IF (IMCONV==1)
         ENDIF
 C-------------dU_d---------------------------------
+        IFVCHG = 0
         IF(NFXVEL/=0.AND.(IMCONV==1.OR.IMCONV==3)) THEN
           IF (IMON>0) CALL STARTIME(TIMERS,4)
+C--------- set of imposed dof before FV_IMP (IKC=2 global frame,
+C--------- IKC=9 skew or moving frame)
+          NFV2B = 0
+          IFV2B = 0
+          DO I=1,NDDL0
+            IF (IKC(I)==2.OR.IKC(I)==9) THEN
+              NFV2B = NFV2B + 1
+              IFV2B = IFV2B + I
+            ENDIF
+          ENDDO
           CALL FV_IMP(IBFV  ,NPC    ,TF     ,VEL   ,SENSOR_TAB,
      1                D_IMP  ,DR_IMP ,IKC   ,IDDL  ,NSENSOR   ,
      2                SKEWS%SKEW  ,IFRAME ,XFRAME ,V     ,VR    ,
      3                X     ,DIRUL  ,NDOF   ,A     ,AR    )
+C--------- an imposed motion started or stopped: the condensed system
+C--------- (NDDL) changes, so redo the stiffness setup and the solver
+C--------- analysis, as is done for a rigid wall impact
+          NFV2A = 0
+          IFV2A = 0
+          DO I=1,NDDL0
+            IF (IKC(I)==2.OR.IKC(I)==9) THEN
+              NFV2A = NFV2A + 1
+              IFV2A = IFV2A + I
+            ENDIF
+          ENDDO
+          IF (NFV2A/=NFV2B.OR.IFV2A/=IFV2B) IFVCHG = 1
           IF (IMON>0) CALL STOPTIME(TIMERS,4)
+        ENDIF
+C--------- all processes take part, also those without imposed motion
+        IF(NFXV_G/=0.AND.(IMCONV==1.OR.IMCONV==3)) THEN
+          IF (NSPMD>1) CALL SPMD_MAX_I(IFVCHG)
+          IF (IFVCHG>0) THEN
+            ISETK = 1
+            IDSC  = 1
+C--------- ISETP was taken from ISETK at the start of the cycle: the
+C--------- iterative solver must also rebuild its preconditioner for
+C--------- the new condensed system
+            ISETP = 1
+          ENDIF
         ENDIF
 C------------- rgwal0_imp can follow-aSetk = 1, but you have to change-fv_imp1
 C-------------(IKC(I)=4->IMCONV=1 to avoid rebound-------
@@ -890,11 +934,13 @@ C
             END IF
 C
             IF (NSPMD == 1) THEN
-              DO I=1,NDDL
+C--------- the whole array: NDDL grows when an imposed motion stops
+              DO I=1,SIZE(W_DDL)
                 W_DDL(I)=1
               ENDDO
             ENDIF
-            IF (IMCONV/=-2)CALL INI_K0H(NDDL,NNZK,NNZK,IADK,JDIK)
+            IF (IMCONV/=-2)CALL INI_K0H(NDDL,NNZK,NNZK,IADK,JDIK,
+     .                                  NDDL0,NNZK0)
 C
           ENDIF
 C
@@ -917,6 +963,12 @@ C     ---------------
             GOTO 100
           END IF
         ENDIF !IF (ISETK ==1 )
+C--------- the imposed set changed and the stiffness was set up again with
+C--------- the new NDDL: restart the PCG projection vectors at that size
+        IF (IFVCHG>0.AND.M_VS>0) THEN
+          CALL REINI_PROJ(NDDL)
+          NPCGPV = -1
+        ENDIF
 C-----------------------------
 citask0       IF (ITASK == 0) THEN
 C-----------------------------
@@ -1611,13 +1663,16 @@ C       re-evoluer Rref-------
             ENDIF
             IF (I_IMP(7)==0.AND.IREFI==4) IREFI= -4
           ENDIF
-          IF (IMCONV>0.AND.ISPRB/=1) THEN
+C         /IMPL/RREF/LIMIT bounds the reference residual on every pass (start of a step AND
+C         every Newton iteration), so that the iterations check against the same bounded
+C         reference as the start of the step.
+          IF (ISPRB/=1) THEN
             R02 = MAX(R02,RF_MIN*RF_MIN)
             R02 = MIN(R02,RF_MAX*RF_MAX)
           END IF
 C
           IF (NCYCLE==1.AND.INSOLV>=2.AND.IT==0.AND.IMCONV>=0)
-     .     CALL BFGS_INI(NDDL,N_LIM)
+     .     CALL BFGS_INI(NDDL0,N_LIM)
           R_IMP(17) = R02
 C-----------------------------
 citask0        END IF !(ITASK == 0) THEN
@@ -3541,7 +3596,7 @@ C------ 1er VP: for dt check
             ENDIF
           ENDIF
 
-          CALL INI_K0H(NDDL,NNZK,NNZK,IADK,JDIK)
+          CALL INI_K0H(NDDL,NNZK,NNZK,IADK,JDIK,NDDL0,NNZK0)
           IF (IMON>0) CALL STOPTIME(TIMERS,31)
         ENDIF
 
@@ -5081,7 +5136,7 @@ C------------------------------------------
 !||    imp_workh      ../engine/share/modules/impbufdef_mod.F
 !||    message_mod    ../engine/share/message_module/message_mod.F
 !||====================================================================
-      SUBROUTINE INI_K0H(NDDL,NNZ,NNZM,IADK,JDIK)
+      SUBROUTINE INI_K0H(NDDL,NNZ,NNZM,IADK,JDIK,NDDLMX,NNZMX)
 C-----------------------------------------------
 C   M o d u l e s
 C-----------------------------------------------
@@ -5099,21 +5154,28 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-        INTEGER NDDL,NNZ,NNZM,IADK(*),JDIK(*)
+        INTEGER NDDL,NNZ,NNZM,IADK(*),JDIK(*),NDDLMX,NNZMX
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-        INTEGER IERR,LNZM
+        INTEGER IERR,LNZM,ND,NZ
+C------------------------------------------------------------
+C     The work vectors are kept for the whole run, but the condensed
+C     dimension NDDL can grow later (an imposed motion stops and its
+C     dof becomes free): size them by the uncondensed dimension.
+C------------------------------------------------------------
+        ND = MAX(NDDL,NDDLMX)
+        NZ = MAX(NNZ,NNZMX)
 C------------------for lin_solv---------------
-        ALLOCATE(L_U(NDDL),DIAG_T(NDDL),L_F0(NDDL),STAT=IERR)
+        ALLOCATE(L_U(ND),DIAG_T(ND),L_F0(ND),STAT=IERR)
         IF (IERR/=0) THEN
           CALL ANCMSG(MSGID=19,ANMODE=ANINFO,
      .                C1='FOR IMPLICIT SOLVER')
           CALL ARRET(2)
         ENDIF
         IF (ISOLV==1.OR.ISOLV>4) THEN
-          ALLOCATE(PCG_W1(NDDL),PCG_W2(NDDL),PCG_W3(NDDL),STAT=IERR)
-          ALLOCATE(IADK0(NDDL+1),JDIK0(NNZ),LT_K0(NNZ),STAT=IERR)
+          ALLOCATE(PCG_W1(ND),PCG_W2(ND),PCG_W3(ND),STAT=IERR)
+          ALLOCATE(IADK0(ND+1),JDIK0(NZ),LT_K0(NZ),STAT=IERR)
           IF (IERR/=0) THEN
             CALL ANCMSG(MSGID=19,ANMODE=ANINFO,
      .                  C1='FOR PCG SOLVER')
@@ -5123,7 +5185,9 @@ C------------------for lin_solv---------------
           IF (IPREC==5) THEN
             LNZM = NNZM
             IF (N_PAT>1) CALL DIM_SPAN(N_PAT,NDDL,IADK,JDIK,LNZM,IERR)
-            ALLOCATE(IADM0(NDDL+1),JDIM0(LNZM),LT_M0(LNZM),STAT=IERR)
+C--------- [M] has the pattern of [K] (N_PAT=1): same growth as [K]
+            LNZM = MAX(LNZM,NZ)
+            ALLOCATE(IADM0(ND+1),JDIM0(LNZM),LT_M0(LNZM),STAT=IERR)
             IF (IERR/=0) THEN
               CALL ANCMSG(MSGID=19,ANMODE=ANINFO,
      .                    C1='FOR PCG(IPREC=5) SOLVER')
@@ -5146,6 +5210,57 @@ C
           NCG_RUN = 0
           PROJ_V = ZERO
         END IF
+C------------------------------------------
+        RETURN
+      END
+!||====================================================================
+!||    reini_proj    ../engine/source/implicit/imp_solv.F
+!||--- called by ------------------------------------------------------
+!||    imp_solv      ../engine/source/implicit/imp_solv.F
+!||--- calls      -----------------------------------------------------
+!||    ancmsg        ../engine/source/output/message/message.F
+!||    arret         ../engine/source/system/arret.F
+!||--- uses       -----------------------------------------------------
+!||    imp_pcg_proj  ../engine/share/modules/impbufdef_mod.F
+!||    message_mod   ../engine/share/message_module/message_mod.F
+!||====================================================================
+C     The condensed dimension NDDL changed (an imposed motion started or
+C     stopped): the stored PCG projection vectors have the old size and
+C     dof numbering. Size them for the new NDDL and start again with no
+C     stored vector, as at the first cycle (INI_K0H).
+      SUBROUTINE REINI_PROJ(NDDL)
+C-----------------------------------------------
+C   M o d u l e s
+C-----------------------------------------------
+        USE IMP_PCG_PROJ
+        USE MESSAGE_MOD
+C-----------------------------------------------
+C   I m p l i c i t   T y p e s
+C-----------------------------------------------
+#include "implicit_f.inc"
+C-----------------------------------------------
+C   D u m m y   A r g u m e n t s
+C-----------------------------------------------
+        INTEGER NDDL
+C-----------------------------------------------
+C   L o c a l   V a r i a b l e s
+C-----------------------------------------------
+        INTEGER IERR,LNZM
+C------------------------------------------
+        IF (M_VS<=0) RETURN
+        LNZM=M_VS+1
+        IF (ALLOCATED(PROJ_S)) DEALLOCATE(PROJ_S)
+        IF (ALLOCATED(PROJ_T)) DEALLOCATE(PROJ_T)
+        IF (ALLOCATED(PROJ_V)) DEALLOCATE(PROJ_V)
+        ALLOCATE(PROJ_S(NDDL,LNZM),PROJ_T(NDDL,LNZM),PROJ_V(NDDL),
+     .           STAT=IERR)
+        IF (IERR/=0) THEN
+          CALL ANCMSG(MSGID=19,ANMODE=ANINFO,
+     .                C1='FOR PCG SOLVER')
+          CALL ARRET(2)
+        ENDIF
+        NCG_RUN = 0
+        PROJ_V = ZERO
 C------------------------------------------
         RETURN
       END

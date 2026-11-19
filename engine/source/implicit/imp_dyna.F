@@ -15,6 +15,13 @@ Copyright>        You should have received a copy of the GNU Affero General Publ
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Copyright>
 Copyright>
+Copyright>        OpenCourant
+Copyright>        Copyright (C) 2026 OpenCourant contributors
+Copyright>
+Copyright>        Modified by the OpenCourant project, 2026.
+Copyright>        Modifications are licensed under the GNU Affero General Public
+Copyright>        License, version 3 or (at your option) any later version.
+Copyright>
 Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 Copyright>        See COPYRIGHT.md at the root of the repository for the full
 Copyright>        copyright and attribution statement.
@@ -861,7 +868,9 @@ C--- Estimate A (t = 0) ----
          IF (NSPMD>1) THEN
           DO I=IAD_ELEM(1,1),IAD_ELEM(1,NSPMD+1)-1
             J = FR_ELEM(I)
-            TMP = ABS(DY_A(1,J))+ABS(DY_A(2,J))+ABS(DY_A(3,J))+
+            TMP = ABS(DY_A(1,J))+ABS(DY_A(2,J))+ABS(DY_A(3,J))
+C--------- DY_AR is allocated only with rotational dof (IMP_DYNA)
+            IF (IRODDL/=0) TMP = TMP+
      .            ABS(DY_AR(1,J))+ABS(DY_AR(2,J))+ABS(DY_AR(3,J))
             IF (TMP>ZERO) NCL_MAX = NCL_MAX + 1
           ENDDO
