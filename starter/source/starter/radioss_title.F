@@ -62,7 +62,7 @@ C-----------------------------------------------
          WRITE(RADVERS,'(A,A)') 'Simcenter Radioss',VERS
          LEN = LEN + 15
        ELSE
-         WRITE(RADVERS,'(A)') 'OpenCourant Starter'
+         WRITE(RADVERS,'(A,A)') 'OpenCourant Starter ',VERS(1:LEN_VERS)
          LEN = LEN_TRIM(RADVERS)
        ENDIF
  

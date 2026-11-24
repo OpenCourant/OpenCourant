@@ -1206,7 +1206,7 @@ C-----------------------------------------------
 
 
          WRITE(6,'(A,A)') ' '
-         WRITE(6,'(A,A)') 'OpenCourant Starter '
+         WRITE(6,'(A,A)') 'OpenCourant Starter ',VERS(1:LEN_VERS)
          WRITE(6,'(A,A)') ' '
          WRITE(6,'(A,A)') 'Platform release : ',CPUNAM
          WRITE(6,'(A,A)') 'Platform info : ',ARCHTITLE
@@ -1270,7 +1270,7 @@ C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
        WRITE(6,'(A)') ' '
-       WRITE(6,'(A,A)') 'RADIOSS Starter version ',VERS(1:LEN_VERS)
+       WRITE(6,'(A,A)') 'OpenCourant Starter version ',VERS(1:LEN_VERS)
        WRITE(6,'(A)') ' '
        WRITE(6,'(A)')   'Command line arguments help: '
        WRITE(6,'(A,A)') '  -help           / -h                 : ',

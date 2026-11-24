@@ -66,7 +66,7 @@ C-----------------------------------------------
           WRITE(RADVERS,'(A,A)') 'OpenCourant Engine ',VERS
           LEN = LEN + 14
        ELSE
-          WRITE(RADVERS,'(A)') 'OpenCourant Engine'
+          WRITE(RADVERS,'(A,A)') 'OpenCourant Engine ',VERS(1:LEN_VERS)
           LEN = LEN_TRIM(RADVERS)
        ENDIF
 
