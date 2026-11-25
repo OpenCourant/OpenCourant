@@ -15,6 +15,13 @@ Copyright>        You should have received a copy of the GNU Affero General Publ
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Copyright>
 Copyright>
+Copyright>        OpenCourant
+Copyright>        Copyright (C) 2026 OpenCourant contributors
+Copyright>
+Copyright>        Modified by the OpenCourant project, 2026.
+Copyright>        Modifications are licensed under the GNU Affero General Public
+Copyright>        License, version 3 or (at your option) any later version.
+Copyright>
 Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 Copyright>        See COPYRIGHT.md at the root of the repository for the full
 Copyright>        copyright and attribution statement.
@@ -668,7 +675,10 @@ C
           ENDIF
 C
           !< Choose default value for ITET4 according to the material law
+          !< (4-node tetrahedra only: for the other solids IPARG(41) must stay 0,
+          !<  the engine reads it as ISROT and assembles nodal moments if it is not)
           IF ((IGEO(29,PID) /= 1) .AND. (ITET4 == 0) .AND. 
+     .        (IKSNOD0 == 4) .AND.
      .        ((IGT == 14) .OR. (IGT == 6))) THEN
             IF (MATPARAM_TAB(MID)%ITETRA4 == 1) THEN
               ITET4 = 1000
