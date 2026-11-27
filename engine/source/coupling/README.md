@@ -61,6 +61,11 @@ We are using preCICE v3 API, and CWIPI default (legacy) API for coupling. The ar
 - run `./build_script.sh -arch=linux64_gf -mpi=ompi -cwipi=/absolute/path/to/cwipi`. It will define `WITH_CWIPI` that enables  adapter.
 - run `./build_script.sh -arch=linux64_gf -mpi=ompi -preCICE`. It will define `WITH_PRECICE` that enables preCICE adapter.
 
+## Notes on preCICE
+
+- By default, preCICE requires MPI, therefore, OpenCourant needs to be built with MPI enabled. If MPI is not found, this might appear as a linking problem with preCICE. To resolve that, you might need to specify the path to the MPI headers, for example: `./build_script.sh -arch=linux64_gf -mpi=ompi -mpi-include=/usr/lib/x86_64-linux-gnu/openmpi/include -preCICE`.
+- Since checkpointing is not implemented, the OpenCourant adapter does not support implicit coupling configurations.
+
 ## References
 - [preCICE Documentation](https://precice.org/)
 - [CWIPI Github](https://github.com/onera/cwipi)
